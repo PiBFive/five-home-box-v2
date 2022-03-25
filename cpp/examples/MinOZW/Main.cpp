@@ -521,14 +521,37 @@ void OnNotification(Notification const* _notification, void* context)
 
 	NodeInfo* nodeInfo = new NodeInfo();
     ValueID valueId;
+	string valueLabel;
+
+	//Creating lists to facilitate getting and setting values from the menu
+	list<ValueID*> listValuesId;
+	list<string*> listValuesNames;
 	
 	switch (_notification->GetType())
 	{
 		case Notification::Type_ValueAdded:
+			//We get from the notification the values's ID and name.
 			valueId = _notification->GetValueID();
+			valueLabel = Manager::Get()->GetValueLabel(valueId);
+
+			cout << "Value with Label " << valueLabel << " has been added" << endl;
 			cout << "Detail Value Id: " << valueId.GetAsString() << endl;
+
+			//We add the value to the lists
+			listValuesId.push_back(&valueId);
+			listValuesNames.push_back(&valueLabel);
 			break;
 		case Notification::Type_ValueRemoved:
+			//We get from the notification the values's ID and name.
+			valueId = _notification->GetValueID();
+			valueLabel = Manager::Get()->GetValueLabel(valueId);
+
+			cout << "Value with Label " << valueLabel << " has been removed" << endl;
+			cout << "Detail Value Id: " << valueId.GetAsString() << endl;
+
+			//We delete the value from the lists
+			listValuesId.remove(&valueId);
+			listValuesNames.remove(&valueLabel);
 			break;
 		case Notification::Type_ValueChanged:
 			break;
