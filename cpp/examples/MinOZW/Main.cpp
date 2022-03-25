@@ -523,9 +523,7 @@ void OnNotification(Notification const* _notification, void* context)
     ValueID valueId;
 	string valueLabel;
 
-	//Creating lists to facilitate getting and setting values from the menu
-	list<ValueID*> listValuesId;
-	list<string*> listValuesNames;
+	list<NodeInfo*>::iterator itNode;
 	
 	switch (_notification->GetType())
 	{
@@ -534,24 +532,35 @@ void OnNotification(Notification const* _notification, void* context)
 			valueId = _notification->GetValueID();
 			valueLabel = Manager::Get()->GetValueLabel(valueId);
 
-			cout << "Value with Label " << valueLabel << " has been added" << endl;
-			cout << "Detail Value Id: " << valueId.GetAsString() << endl;
+			
 
-			//We add the value to the lists
-			listValuesId.push_back(&valueId);
-			listValuesNames.push_back(&valueLabel);
+			//We add the value to the value list of the node
+			for(itNode = g_nodes.begin(); itNode != g_nodes.end(); ++itNode )
+			{
+				uint8 nodeId = (*itNode) -> m_nodeId;
+				if ( nodeId == valueId.GetNodeId() )
+					((*itNode) -> m_values).push_back(valueId);
+					
+			}
+
+			cout << "[" << time(0) << " : VALUE_ADDED] label: " << valueLabel << ", id: " << valueId.GetId() << "nodeId: " << valueId.GetNodeId() << endl;
 			break;
 		case Notification::Type_ValueRemoved:
 			//We get from the notification the values's ID and name.
 			valueId = _notification->GetValueID();
 			valueLabel = Manager::Get()->GetValueLabel(valueId);
 
-			cout << "Value with Label " << valueLabel << " has been removed" << endl;
-			cout << "Detail Value Id: " << valueId.GetAsString() << endl;
 
-			//We delete the value from the lists
-			listValuesId.remove(&valueId);
-			listValuesNames.remove(&valueLabel);
+			//We delete the value from the value list of the node
+
+			for(itNode = g_nodes.begin(); itNode != g_nodes.end(); ++itNode )
+			{
+				uint8 nodeId = (*itNode) -> m_nodeId;
+				if ( nodeId == valueId.GetNodeId() )
+					((*itNode) -> m_values).remove(valueId);
+			}
+
+			cout << "[" << time(0) << " : VALUE_REMOVED] label: " << valueLabel << ", id: " << valueId.GetId() << "nodeId: " << valueId.GetNodeId() << endl;
 			break;
 		case Notification::Type_ValueChanged:
 			break;
@@ -624,16 +633,8 @@ void OnNotification(Notification const* _notification, void* context)
 		default:
 			break;
 	}
-	// cout << "Number of nodes: " << g_nodes.size() << endl;
 	
-    std::cout << "Notification: " << _notification << endl;
     
-	list<NodeInfo*>::iterator it;
-	// for (it = g_nodes.begin(); it != g_nodes.end(); ++it) {
-	// 	cout << "NodeID  : " << unsigned((*it)->m_nodeId) << endl;
-	// 	cout << "NodeName: " << (*it)->m_name << endl;
-	// 	cout << "NodeType: " << (*it)->m_nodeType << endl;
-	// }
 
 	pthread_mutex_unlock(&g_criticalSection); // unlock critical section
 	return;
