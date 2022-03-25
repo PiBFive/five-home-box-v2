@@ -161,7 +161,7 @@
 // 			NodeInfo* nodeInfo = new NodeInfo();
 // 			nodeInfo->m_homeId = _notification->GetHomeId();
 // 			nodeInfo->m_nodeId = _notification->GetNodeId();
-// 			nodeInfo->m_polled = false;		
+// 			nodeInfo->m_polled = false;
 // 			g_nodes.push_back( nodeInfo );
 // 			break;
 // 		}
@@ -295,7 +295,7 @@
 
 // 	// Create the OpenZWave Manager.
 // 	// The first argument is the path to the config files (where the manufacturer_specific.xml file is located
-// 	// The second argument is the path for saved Z-Wave network state and the log file.  If you leave it NULL 
+// 	// The second argument is the path for saved Z-Wave network state and the log file.  If you leave it NULL
 // 	// the log file will appear in the program's working directory.
 // 	Options::Create( "../../../config/", "", "" );
 // 	Options::Get()->AddOptionInt( "SaveLogLevel", LogLevel_Detail );
@@ -342,8 +342,8 @@
 // 	// In a normal app, we would be handling notifications and building a UI for the user.
 // 	pthread_cond_wait( &initCond, &initMutex );
 
-// 	// Since the configuration file contains command class information that is only 
-// 	// known after the nodes on the network are queried, wait until all of the nodes 
+// 	// Since the configuration file contains command class information that is only
+// 	// known after the nodes on the network are queried, wait until all of the nodes
 // 	// on the network have been queried (at least the "listening" ones) before
 // 	// writing the configuration file.  (Maybe write again after sleeping nodes have
 // 	// been queried as well.)
@@ -351,7 +351,7 @@
 // 	{
 
 // 		// The section below demonstrates setting up polling for a variable.  In this simple
-// 		// example, it has been hardwired to poll COMMAND_CLASS_BASIC on the each node that 
+// 		// example, it has been hardwired to poll COMMAND_CLASS_BASIC on the each node that
 // 		// supports this setting.
 // 		pthread_mutex_lock( &g_criticalSection );
 // 		for( list<NodeInfo*>::iterator it = g_nodes.begin(); it != g_nodes.end(); ++it )
@@ -389,8 +389,8 @@
 
 // 		// If we want to access our NodeInfo list, that has been built from all the
 // 		// notification callbacks we received from the library, we have to do so
-// 		// from inside a Critical Section.  This is because the callbacks occur on other 
-// 		// threads, and we cannot risk the list being changed while we are using it.  
+// 		// from inside a Critical Section.  This is because the callbacks occur on other
+// 		// threads, and we cannot risk the list being changed while we are using it.
 // 		// We must hold the critical section for as short a time as possible, to avoid
 // 		// stalling the OpenZWave drivers.
 // 		// At this point, the program just waits for 3 minutes (to demonstrate polling),
@@ -452,9 +452,13 @@
 #include "Options.h"
 #include "Notification.h"
 #include "platform/Log.h"
+#include "NotificationCCTypes.h"
+#include "Node.h"
 #include <thread>
 
 using namespace OpenZWave;
+using namespace Internal;
+using namespace CC;
 using namespace std;
 
 static uint32 g_homeId = 0;
@@ -503,6 +507,9 @@ void OnNotification(Notification const* _notification, void* context)
 	if (g_homeId == 0)
 		g_homeId = _notification->GetHomeId();
 
+	cout << ">>> NOTIFICATION: " << _notification << endl;
+	cout << ">>> CONTEXT: " << context << endl;
+
 	// cout << "Before AddNode()\n";
 	// if (g_homeId != 0)
 	// {
@@ -512,7 +519,7 @@ void OnNotification(Notification const* _notification, void* context)
 	// 	cout << "After condition\n";
 	// }
 	// cout << "After AddNode()\n";
-	
+
 	// cout << "---- NOTIFICATION: ----\n";
 	// cout << "Type: " << _notification->GetType() << '\n';
 	// cout << "HomeId: " << _notification->GetHomeId() << '\n';
@@ -520,25 +527,66 @@ void OnNotification(Notification const* _notification, void* context)
 	// cout << "Number of nodes: " << g_nodes.size() << '\n';
 
 	NodeInfo* nodeInfo = new NodeInfo();
-    ValueID valueId;
+    ValueID v;
+	list<NodeInfo*>::iterator itNode;
+	list<ValueID>::iterator itValueID;
+	Node::NodeData* nodeData = new Node::NodeData;
+	bool myBool;
+	bool* myBoolPtr = &myBool;	
+	bool* myValue;
 	
+
 	switch (_notification->GetType())
 	{
 		case Notification::Type_ValueAdded:
-			valueId = _notification->GetValueID();
-			cout << "Detail Value Id: " << valueId.GetAsString() << endl;
+			v = _notification->GetValueID();
+			cout << "Detail Value Id: " << v.GetAsString() << endl;
 			break;
 		case Notification::Type_ValueRemoved:
 			break;
-		case Notification::Type_ValueChanged:
-			break;
+		case Notification::Type_ValueChanged: // a value has changed on the Z-Wave network and this is a different value
+			cout << "[" << time(0) << ", VALUE_CHANGED]\n";
+			v = _notification->GetValueID();
+
+			for (itNode = g_nodes.begin(); itNode != g_nodes.end(); ++itNode)
+			{
+				if ((*itNode)->m_nodeId == v.GetNodeId())
+				{
+					(*itNode)->m_values.push_back(v);
+					break;
+				}
+			}
+			
+			cout << "  id: " << int(v.GetId()) <<"\n" 
+				 << "  index: " << int(v.GetIndex()) << "\n"
+				 << "  type: " << v.GetType() << "\n"
+				 << "  node_id: " << int(v.GetNodeId()) << "\n"
+				 << "  node_name: " << Manager::Get()->GetNodeProductName(v.GetHomeId(), v.GetNodeId()) << "\n"
+				 << "  node_type: " << int(Manager::Get()->GetNodeDeviceType(v.GetHomeId(), v.GetNodeId())) << "\n"
+				 << "  node_stage: " << Manager::Get()->GetNodeQueryStage(v.GetHomeId(), v.GetNodeId()) << "\n"
+				 << "  node_version: " << int(Manager::Get()->GetNodeVersion(v.GetHomeId(), v.GetNodeId())) << "\n"
+				 << "  node_specific: " << Manager::Get()->GetNodeSpecificString(v.GetHomeId(), v.GetNodeId()) << "\n"
+				 << "  node_label: " << Node(v.GetHomeId(), v.GetNodeId()).GetInstanceLabel(v.GetCommandClassId(), v.GetInstance()) << "\n"
+				 << "  cc_id: " << int(v.GetCommandClassId()) << "\n"
+				 << "  name: " << Manager::Get()->GetCommandClassName(v.GetCommandClassId()) << "\n";
+			
+			if (v.GetType() == ValueID::ValueType_Bool) {
+				Manager::Get()->GetValueAsBool(v, myBoolPtr);
+				cout << "  value_as_bool: " <<  *myBoolPtr << "\n";
+			}
+
+			// for (itValueID = (*itNode)->m_values.begin(); itValueID != (*itNode)->m_values.end(); ++itValueID)
+			// {
+			// 	cout << itValueID->GetAsString() << endl;
+			// }
+
 		case Notification::Type_ValueRefreshed:
 			break;
 		case Notification::Type_Group:
 			break;
 		case Notification::Type_NodeNew:
 			break;
-		case Notification::Type_NodeAdded:			
+		case Notification::Type_NodeAdded:
 			nodeInfo->m_homeId = _notification->GetHomeId();
 			nodeInfo->m_nodeId = _notification->GetNodeId();
 			nodeInfo->m_name = Manager::Get()->GetNodeProductName(nodeInfo->m_homeId, nodeInfo->m_nodeId);
@@ -591,6 +639,8 @@ void OnNotification(Notification const* _notification, void* context)
 		case Notification::Type_DriverRemoved:
 			break;
 		case Notification::Type_ControllerCommand:
+			cout << "Create command class..." << endl;
+			cout << _notification->Type_ControllerCommand << _notification->GetCommand();
 			break;
 		case Notification::Type_NodeReset:
 			break;
@@ -602,10 +652,9 @@ void OnNotification(Notification const* _notification, void* context)
 			break;
 	}
 	// cout << "Number of nodes: " << g_nodes.size() << endl;
-	
+
     std::cout << "Notification: " << _notification << endl;
-    
-	list<NodeInfo*>::iterator it;
+
 	// for (it = g_nodes.begin(); it != g_nodes.end(); ++it) {
 	// 	cout << "NodeID  : " << unsigned((*it)->m_nodeId) << endl;
 	// 	cout << "NodeName: " << (*it)->m_name << endl;
@@ -620,7 +669,7 @@ void menu()
 {
 	string response;
     int choice{ 0 };
-	int x{ 5 };
+	int x{ 10 };
 	while (x --> 0)
 	{
 		std::cout << x << endl;
@@ -643,7 +692,7 @@ void menu()
     {
         std::cerr << e.what() << '\n';
     }
-    
+
 
     switch (choice)
     {
@@ -701,10 +750,10 @@ int main(int argc, char const *argv[])
 	string port = "/dev/ttyACM0";
 	Manager::Get()->AddDriver( port );
 	//Manager::Get()->SetValue();
-	
+
 	// Log::Create("Log.txt", true, false, LogLevel_Debug, LogLevel_Debug, LogLevel_Debug);
-	thread t1(menu);
-	t1.join();
+	// thread t1(menu);
+	// t1.join();
 	pthread_cond_wait(&initCond, &initMutex);
 
 	if (!g_initFailed)
@@ -713,7 +762,7 @@ int main(int argc, char const *argv[])
 		for (list<NodeInfo*>::iterator it = g_nodes.begin(); it != g_nodes.end(); ++it)
 		{
 			NodeInfo* nodeInfo = *it;
-			
+
 			if (nodeInfo->m_homeId == 1)
 			{
 				std::cout << "This is the controller";
@@ -723,7 +772,7 @@ int main(int argc, char const *argv[])
 			// printf("\t NodeName: %s \n ", Manager::Get()->GetNodeName(nodeInfo->m_homeId,nodeInfo->m_nodeId).c_str());
 			// printf("\t ManufacturerName: %s \n ", Manager::Get()->GetNodeManufacturerName(nodeInfo->m_homeId,nodeInfo->m_nodeId).c_str());
 			// printf("\t NodeProductName: %s \n ", Manager::Get()->GetNodeProductName(nodeInfo->m_homeId,nodeInfo->m_nodeId).c_str());
-			
+
 			// printf("Values announced by the nodes without polling: \n");
 			// for (list<ValueID>::iterator it2 = nodeInfo->m_values.begin(); it2 != nodeInfo->m_values.end(); ++it2)
 			// {
@@ -751,6 +800,6 @@ int main(int argc, char const *argv[])
 	// 	printf("Reads: %d Writes: %d CAN: %d NAK: %d ACK: %d Out of Frame: %d\n", data.m_readCnt, data.m_writeCnt, data.m_CANCnt, data.m_NAKCnt, data.m_ACKCnt, data.m_OOFCnt);
 	// 	printf("Dropped: %d Retries: %d\n", data.m_dropped, data.m_retries);
 	}
-	
+
 	return 0;
 }
