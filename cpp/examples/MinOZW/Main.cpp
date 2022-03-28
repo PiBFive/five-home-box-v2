@@ -621,6 +621,8 @@ void menu()
 	string response;
     int choice{ 0 };
 	int x{ 5 };
+	list<NodeInfo*>::iterator nodeIt;
+	list<ValueID>::iterator valueIt;
 	while (x --> 0)
 	{
 		std::cout << x << endl;
@@ -654,7 +656,10 @@ void menu()
         Manager::Get()->RemoveNode(g_homeId);
         break;
     case 3:
-        // Manager::Get()->;
+        for(nodeIt == g_nodes.begin(); nodeIt != g_nodes.end(); ++nodeIt)
+			for(valueIt == (*nodeIt) -> m_values.begin(); valueIt == (*nodeIt) -> m_values.end(); ++valueIt)
+				
+		// Manager::Get()->;
         break;
     case 4:
         break;
