@@ -247,7 +247,14 @@ namespace OpenZWave
 						{
 							NotificationSequence = _data[7 + EventParamLength];
 						}
-						Log::Write(LogLevel_Info, GetNodeId(), "Received Notification report (>v1): Type: %s (%d) Event: %s (%d) Status: %s, Param Length: %d", NotificationCCTypes::Get()->GetAlarmType(NotificationType).c_str(), NotificationType, NotificationCCTypes::Get()->GetEventForAlarmType(NotificationType, NotificationEvent).c_str(), NotificationEvent, NotificationStatus ? "true" : "false", EventParamLength);
+						Log::Write(LogLevel_Info, GetNodeId(), "Received Notification report (>v1): Type: %s (%d) Event: %s (%d) Status: %s, Param Length: %d",
+							NotificationCCTypes::Get()->GetAlarmType(NotificationType).c_str(),
+							NotificationType,
+							NotificationCCTypes::Get()->GetEventForAlarmType(NotificationType, NotificationEvent).c_str(),
+							NotificationEvent,
+							NotificationStatus ? "true" : "false",
+							EventParamLength
+						);
 						if (NotificationSequencePresent)
 							Log::Write(LogLevel_Info, GetNodeId(), "\t Sequence Number: %d", NotificationSequence);
 
