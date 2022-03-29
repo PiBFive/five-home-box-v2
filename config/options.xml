@@ -6,13 +6,13 @@
   <Option name="logging" value="true" />
   
   <!-- Should we Output Log Messages on the Console. Set to True for Foreground Processes -->
-  <!-- <Option name="ConsoleOutput" value="true" /> -->
+  <Option name="ConsoleOutput" value="true" />
   
   <!-- The Name of the Log File -->
   <Option name="LogFileName" value="OZW.log" />
   
   <!-- Should we create a new Log File on start, or append to a Log File if it exists -->
-  <Option name="AppendLogFile" value="false" />
+  <Option name="AppendLogFile" value="true" />
   
   <!-- Should we automatically associate the Controller Node with devices Lifeline Group (or other groups marked as Auto) -->
   <Option name="Associate" value="true" />
