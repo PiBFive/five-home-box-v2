@@ -617,6 +617,7 @@ void OnNotification(Notification const* _notification, void* context)
 		case Notification::Type_NodeNew:
 			break;
 		case Notification::Type_NodeAdded:
+			printf("node added!");			
 			nodeInfo->m_homeId = _notification->GetHomeId();
 			nodeInfo->m_nodeId = _notification->GetNodeId();
 			nodeInfo->m_name = Manager::Get()->GetNodeProductName(nodeInfo->m_homeId, nodeInfo->m_nodeId);
@@ -691,34 +692,37 @@ void OnNotification(Notification const* _notification, void* context)
 void menu()
 {
 	string response;
-    int choice{ 0 };
-	int x{ 10 };
-	while (x --> 0)
-	{
-		std::cout << x << endl;
-		this_thread::sleep_for(chrono::seconds(1));
-	}
+  int choice{ 0 };
+  int x{ 5 };
+  int counterNode{0};
+  int counterValue{0};
+  list<NodeInfo*>::iterator nodeIt;
+  list<ValueID>::iterator valueIt;
+  while (x --> 0) {
+    std::cout << x << endl;
+    this_thread::sleep_for(chrono::seconds(1));
+  }
 
-    cout << "----- MENU -----" << endl << endl;
-    cout << "1. Add node" << endl;
-    cout << "2. Remove node" << endl;
-    cout << "3. Get value" << endl;
-    cout << "4. Set value" << endl;
+  cout << "----- MENU -----" << endl << endl;
+  cout << "1. Add node" << endl;
+  cout << "2. Remove node" << endl;
+  cout << "3. Get value" << endl;
+  cout << "4. Set value" << endl;
+	cout << "5. Reset Key" << endl;
+	cout << "6. Wake Up" << endl;
+	cout << "7. Heal" << endl;
 
+	cout << "Please choose: ";
     cin >> response;
 
-    try
-    {
+    try {
         choice = stoi(response);
-    }
-    catch(const std::exception& e)
-    {
+    } catch(const std::exception& e) {
         std::cerr << e.what() << '\n';
     }
 
 
-    switch (choice)
-    {
+    switch (choice) {
     case 1:
         Manager::Get()->AddNode(g_homeId, false);
         break;
@@ -726,10 +730,42 @@ void menu()
         Manager::Get()->RemoveNode(g_homeId);
         break;
     case 3:
-        // Manager::Get()->;
+		cout << "Choose what node you want a value from: " << endl;
+        for(nodeIt = g_nodes.begin(); nodeIt != g_nodes.end(); nodeIt++)
+		{
+			counterNode++;
+			cout << counterNode << ". " << (*nodeIt)->m_name << endl;
+			
+		}
+		cin >> response;
+		choice = stoi(response);
+		counterNode = 0;
+		for(nodeIt = g_nodes.begin(); nodeIt != g_nodes.end(); nodeIt++)
+		{
+			counterNode++;
+			if (counterNode == choice)
+			{
+				for(valueIt = (*nodeIt) -> m_values.begin(); valueIt != (*nodeIt) -> m_values.end(); valueIt++)
+				{
+					counterValue++;
+					cout << counterValue << ". " << Manager::Get()->GetValueLabel(*valueIt) << endl;
+				}
+			}
+			
+			
+		}
+			
+				
+		// Manager::Get()->;
         break;
     case 4:
         break;
+	case 5:
+		break;
+	case 6:
+		break;
+	case 7:
+		break;
     default:
         cout << "You must enter 1, 2, 3 or 4." << endl;
         break;
@@ -775,8 +811,11 @@ int main(int argc, char const *argv[])
 	//Manager::Get()->SetValue();
 
 	// Log::Create("Log.txt", true, false, LogLevel_Debug, LogLevel_Debug, LogLevel_Debug);
-	// thread t1(menu);
-	// t1.join();
+	while(true)
+	{
+		thread t1(menu);
+		t1.join();
+	}
 	pthread_cond_wait(&initCond, &initMutex);
 
 	if (!g_initFailed)
