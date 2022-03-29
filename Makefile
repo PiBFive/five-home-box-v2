@@ -22,6 +22,9 @@ export UNAME
 all: 
 	@LDFLAGS="$(LDFLAGS)" CPPFLAGS="$(CPPFLAGS)" $(MAKE) -C $(top_srcdir)/cpp/build/ -$(MAKEFLAGS)
 	@LDFLAGS="$(LDFLAGS)" CPPFLAGS="$(CPPFLAGS)" $(MAKE) -C $(top_srcdir)/cpp/examples/MinOZW/ -$(MAKEFLAGS)
+	@echo makeflags $(MAKEFLAGS)
+	@echo make $(MAKE)
+	@echo ldflags $(LDFLAGS)
 
 install:
 	@$(MAKE) -C $(top_srcdir)/cpp/build/ -$(MAKEFLAGS) $(MAKECMDGOALS)

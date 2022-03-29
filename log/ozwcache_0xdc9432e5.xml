@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <Driver xmlns="https://github.com/OpenZWave/open-zwave" version="5" revision="172" home_id="0xdc9432e5" node_id="1" api_capabilities="8" controller_capabilities="28" poll_interval="500" poll_interval_between="true">
 	<Node id="1" name="" location="" basic="2" generic="2" specific="1" type="Static PC Controller" listening="true" frequentListening="false" beaming="true" routing="true" max_baud_rate="100000" version="4" configrevision="0" query_stage="Complete">
-		<Neighbors>28,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0</Neighbors>
+		<Neighbors>60,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0</Neighbors>
 		<Manufacturer id="115" name="Z-Wave.Me">
 			<Product type="400" id="1" name="ZME_UZB1 USB Stick">
 				<MetaData />

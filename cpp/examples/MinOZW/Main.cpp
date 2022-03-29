@@ -452,28 +452,16 @@
 #include "Options.h"
 #include "Notification.h"
 #include "platform/Log.h"
-#include "NotificationCCTypes.h"
 #include "Node.h"
 #include <thread>
+#include "Five.h"
 
 using namespace OpenZWave;
-using namespace Internal;
-using namespace CC;
+using namespace Five;
 using namespace std;
 
 static uint32 g_homeId = 0;
 static bool   g_initFailed = false;
-
-typedef struct
- {
- 	uint32			m_homeId;
-	uint8			m_nodeId;
-	bool			m_polled;
-	list<ValueID>	m_values;
-	string			m_name;
-	string			m_nodeType;
-
- }NodeInfo;
 
 static list<NodeInfo*> g_nodes;
 static pthread_mutex_t g_criticalSection;
@@ -500,7 +488,7 @@ NodeInfo* GetNodeInfo
 	return NULL;
 }
 
-void OnNotification(Notification const* _notification, void* context)
+void OnNotification(Notification const* notification, void* context)
 {
 	pthread_mutex_lock(&g_criticalSection); // lock critical section
 
@@ -536,8 +524,9 @@ void OnNotification(Notification const* _notification, void* context)
 	bool* myValue;
 	string valueLabel;
 	
+	cout << notification << endl;	
 
-	switch (_notification->GetType())
+	switch (notification->GetType())
 	{
 		case Notification::Type_ValueAdded:
 			//We get from the notification the values's ID and name.
@@ -574,56 +563,20 @@ void OnNotification(Notification const* _notification, void* context)
 
 			cout << "[" << time(0) << " : VALUE_REMOVED] label: " << valueLabel << ", id: " << v.GetId() << "nodeId: " << v.GetNodeId() << endl;
 			break;
-		case Notification::Type_ValueChanged: // a value has changed on the Z-Wave network and this is a different value
-			cout << "[" << time(0) << ", VALUE_CHANGED]\n";
-			v = _notification->GetValueID();
-
-			for (itNode = g_nodes.begin(); itNode != g_nodes.end(); ++itNode)
-			{
-				if ((*itNode)->m_nodeId == v.GetNodeId())
-				{
-					(*itNode)->m_values.push_back(v);
-					break;
-				}
-			}
-			
-			cout << "  id: " << int(v.GetId()) <<"\n" 
-				 << "  index: " << int(v.GetIndex()) << "\n"
-				 << "  type: " << v.GetType() << "\n"
-				 << "  node_id: " << int(v.GetNodeId()) << "\n"
-				 << "  node_name: " << Manager::Get()->GetNodeProductName(v.GetHomeId(), v.GetNodeId()) << "\n"
-				 << "  node_type: " << int(Manager::Get()->GetNodeDeviceType(v.GetHomeId(), v.GetNodeId())) << "\n"
-				 << "  node_stage: " << Manager::Get()->GetNodeQueryStage(v.GetHomeId(), v.GetNodeId()) << "\n"
-				 << "  node_version: " << int(Manager::Get()->GetNodeVersion(v.GetHomeId(), v.GetNodeId())) << "\n"
-				 << "  node_specific: " << Manager::Get()->GetNodeSpecificString(v.GetHomeId(), v.GetNodeId()) << "\n"
-				 << "  node_label: " << Node(v.GetHomeId(), v.GetNodeId()).GetInstanceLabel(v.GetCommandClassId(), v.GetInstance()) << "\n"
-				 << "  cc_id: " << int(v.GetCommandClassId()) << "\n"
-				 << "  name: " << Manager::Get()->GetCommandClassName(v.GetCommandClassId()) << "\n";
-			
-			if (v.GetType() == ValueID::ValueType_Bool) {
-				Manager::Get()->GetValueAsBool(v, myBoolPtr);
-				cout << "  value_as_bool: " <<  *myBoolPtr << "\n";
-			}
-
-			// for (itValueID = (*itNode)->m_values.begin(); itValueID != (*itNode)->m_values.end(); ++itValueID)
-			// {
-			// 	cout << itValueID->GetAsString() << endl;
-			// }
-
 		case Notification::Type_ValueRefreshed:
+			cout << NotificationService::valueRefreshed(notification, g_nodes) << endl;
 			break;
 		case Notification::Type_Group:
 			break;
 		case Notification::Type_NodeNew:
 			break;
 		case Notification::Type_NodeAdded:
-			printf("node added!");			
-			nodeInfo->m_homeId = _notification->GetHomeId();
-			nodeInfo->m_nodeId = _notification->GetNodeId();
-			nodeInfo->m_name = Manager::Get()->GetNodeProductName(nodeInfo->m_homeId, nodeInfo->m_nodeId);
-			nodeInfo->m_polled = false;
-			nodeInfo->m_nodeType = _notification->GetType();
-			g_nodes.push_back( nodeInfo );
+			// nodeInfo->m_homeId = notification->GetHomeId();
+			// nodeInfo->m_nodeId = notification->GetNodeId();
+			// nodeInfo->m_name = Manager::Get()->GetNodeProductName(nodeInfo->m_homeId, nodeInfo->m_nodeId);
+			// // nodeInfo->m_polled = false;
+			// nodeInfo->m_nodeType = _notification->GetType();
+			// g_nodes.push_back( nodeInfo );
 			break;
 		case Notification::Type_NodeRemoved:
 			break;
@@ -655,10 +608,6 @@ void OnNotification(Notification const* _notification, void* context)
 			break;
 		case Notification::Type_EssentialNodeQueriesComplete:
 			break;
-		case Notification::Type_NodeQueriesComplete:
-			break;
-		case Notification::Type_AwakeNodesQueried:
-			break;
 		case Notification::Type_AllNodesQueriedSomeDead:
 			break;
 		case Notification::Type_AllNodesQueried:
@@ -671,7 +620,7 @@ void OnNotification(Notification const* _notification, void* context)
 			break;
 		case Notification::Type_ControllerCommand:
 			cout << "Create command class..." << endl;
-			cout << _notification->Type_ControllerCommand << _notification->GetCommand();
+			cout << notification->Type_ControllerCommand << notification->GetCommand();
 			break;
 		case Notification::Type_NodeReset:
 			break;
@@ -688,6 +637,8 @@ void OnNotification(Notification const* _notification, void* context)
 	pthread_mutex_unlock(&g_criticalSection); // unlock critical section
 	return;
 }
+
+
 
 void menu()
 {
@@ -811,6 +762,7 @@ int main(int argc, char const *argv[])
 	//Manager::Get()->SetValue();
 
 	// Log::Create("Log.txt", true, false, LogLevel_Debug, LogLevel_Debug, LogLevel_Debug);
+
 	while(true)
 	{
 		thread t1(menu);
