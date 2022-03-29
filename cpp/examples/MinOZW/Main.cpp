@@ -534,15 +534,45 @@ void OnNotification(Notification const* _notification, void* context)
 	bool myBool;
 	bool* myBoolPtr = &myBool;	
 	bool* myValue;
+	string valueLabel;
 	
 
 	switch (_notification->GetType())
 	{
 		case Notification::Type_ValueAdded:
+			//We get from the notification the values's ID and name.
 			v = _notification->GetValueID();
-			cout << "Detail Value Id: " << v.GetAsString() << endl;
+			valueLabel = Manager::Get()->GetValueLabel(v);
+
+			
+
+			//We add the value to the value list of the node
+			for(itNode = g_nodes.begin(); itNode != g_nodes.end(); ++itNode )
+			{
+				uint8 nodeId = (*itNode) -> m_nodeId;
+				if ( nodeId == v.GetNodeId() )
+					((*itNode) -> m_values).push_back(v);
+					
+			}
+
+			cout << "[" << time(0) << " : VALUE_ADDED] label: " << valueLabel << ", id: " << v.GetId() << "nodeId: " << v.GetNodeId() << endl;
 			break;
 		case Notification::Type_ValueRemoved:
+			//We get from the notification the values's ID and name.
+			v = _notification->GetValueID();
+			valueLabel = Manager::Get()->GetValueLabel(v);
+
+
+			//We delete the value from the value list of the node
+
+			for(itNode = g_nodes.begin(); itNode != g_nodes.end(); ++itNode )
+			{
+				uint8 nodeId = (*itNode) -> m_nodeId;
+				if ( nodeId == v.GetNodeId() )
+					((*itNode) -> m_values).remove(v);
+			}
+
+			cout << "[" << time(0) << " : VALUE_REMOVED] label: " << valueLabel << ", id: " << v.GetId() << "nodeId: " << v.GetNodeId() << endl;
 			break;
 		case Notification::Type_ValueChanged: // a value has changed on the Z-Wave network and this is a different value
 			cout << "[" << time(0) << ", VALUE_CHANGED]\n";
@@ -651,15 +681,8 @@ void OnNotification(Notification const* _notification, void* context)
 		default:
 			break;
 	}
-	// cout << "Number of nodes: " << g_nodes.size() << endl;
-
-    std::cout << "Notification: " << _notification << endl;
-
-	// for (it = g_nodes.begin(); it != g_nodes.end(); ++it) {
-	// 	cout << "NodeID  : " << unsigned((*it)->m_nodeId) << endl;
-	// 	cout << "NodeName: " << (*it)->m_name << endl;
-	// 	cout << "NodeType: " << (*it)->m_nodeType << endl;
-	// }
+	
+    
 
 	pthread_mutex_unlock(&g_criticalSection); // unlock critical section
 	return;
