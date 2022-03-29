@@ -493,20 +493,75 @@ void OnNotification(Notification const* notification, void* context)
 	pthread_mutex_lock(&g_criticalSection); // lock critical section
 
 	if (g_homeId == 0)
-		g_homeId = notification->GetHomeId();
+		g_homeId = _notification->GetHomeId();
+
+	cout << ">>> NOTIFICATION: " << _notification << endl;
+	cout << ">>> CONTEXT: " << context << endl;
+
+	// cout << "Before AddNode()\n";
+	// if (g_homeId != 0)
+	// {
+	// 	// uint32 const homeId = 3700699877;
+	// 	cout << "In condition\n";
+	// 	Manager::Get()->AddNode(g_homeId);
+	// 	cout << "After condition\n";
+	// }
+	// cout << "After AddNode()\n";
+
+	// cout << "---- NOTIFICATION: ----\n";
+	// cout << "Type: " << _notification->GetType() << '\n';
+	// cout << "HomeId: " << _notification->GetHomeId() << '\n';
+	// cout << "NodeId: " << _notification->GetNodeId() << '\n';
+	// cout << "Number of nodes: " << g_nodes.size() << '\n';
+
+	NodeInfo* nodeInfo = new NodeInfo();
+    ValueID v;
+	list<NodeInfo*>::iterator itNode;
+	list<ValueID>::iterator itValueID;
+	Node::NodeData* nodeData = new Node::NodeData;
+	bool myBool;
+	bool* myBoolPtr = &myBool;	
+	bool* myValue;
+	string valueLabel;
 	
 	cout << notification << endl;	
 
 	switch (notification->GetType())
 	{
 		case Notification::Type_ValueAdded:
-			cout << NotificationService::valueAdded(notification, g_nodes) << endl;
+			//We get from the notification the values's ID and name.
+			v = _notification->GetValueID();
+			valueLabel = Manager::Get()->GetValueLabel(v);
+
+			
+
+			//We add the value to the value list of the node
+			for(itNode = g_nodes.begin(); itNode != g_nodes.end(); ++itNode )
+			{
+				uint8 nodeId = (*itNode) -> m_nodeId;
+				if ( nodeId == v.GetNodeId() )
+					((*itNode) -> m_values).push_back(v);
+					
+			}
+
+			cout << "[" << time(0) << " : VALUE_ADDED] label: " << valueLabel << ", id: " << v.GetId() << "nodeId: " << v.GetNodeId() << endl;
 			break;
 		case Notification::Type_ValueRemoved:
-			cout << NotificationService::valueRemoved(notification, g_nodes) << endl;
-			break;
-		case Notification::Type_ValueChanged:
-			cout << NotificationService::valueChanged(notification, g_nodes) << endl;
+			//We get from the notification the values's ID and name.
+			v = _notification->GetValueID();
+			valueLabel = Manager::Get()->GetValueLabel(v);
+
+
+			//We delete the value from the value list of the node
+
+			for(itNode = g_nodes.begin(); itNode != g_nodes.end(); ++itNode )
+			{
+				uint8 nodeId = (*itNode) -> m_nodeId;
+				if ( nodeId == v.GetNodeId() )
+					((*itNode) -> m_values).remove(v);
+			}
+
+			cout << "[" << time(0) << " : VALUE_REMOVED] label: " << valueLabel << ", id: " << v.GetId() << "nodeId: " << v.GetNodeId() << endl;
 			break;
 		case Notification::Type_ValueRefreshed:
 			cout << NotificationService::valueRefreshed(notification, g_nodes) << endl;
@@ -576,15 +631,8 @@ void OnNotification(Notification const* notification, void* context)
 		default:
 			break;
 	}
-	// cout << "Number of nodes: " << g_nodes.size() << endl;
-
-    std::cout << "Notification: " << notification << endl;
-
-	// for (it = g_nodes.begin(); it != g_nodes.end(); ++it) {
-	// 	cout << "NodeID  : " << unsigned((*it)->m_nodeId) << endl;
-	// 	cout << "NodeName: " << (*it)->m_name << endl;
-	// 	cout << "NodeType: " << (*it)->m_nodeType << endl;
-	// }
+	
+    
 
 	pthread_mutex_unlock(&g_criticalSection); // unlock critical section
 	return;
