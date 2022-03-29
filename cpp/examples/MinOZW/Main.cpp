@@ -70,11 +70,11 @@
 // //-----------------------------------------------------------------------------
 // NodeInfo* GetNodeInfo
 // (
-// 	Notification const* _notification
+// 	Notification const* notification
 // )
 // {
-// 	uint32 const homeId = _notification->GetHomeId();
-// 	uint8 const nodeId = _notification->GetNodeId();
+// 	uint32 const homeId = notification->GetHomeId();
+// 	uint8 const nodeId = notification->GetNodeId();
 // 	uint8 x{ 3 };
 // 	cout << "------------ NODE IDDDDDD: " << unsigned(x) << endl;
 // 	for( list<NodeInfo*>::iterator it = g_nodes.begin(); it != g_nodes.end(); ++it )
@@ -95,37 +95,37 @@
 // //-----------------------------------------------------------------------------
 // void OnNotification
 // (
-// 	Notification const* _notification,
+// 	Notification const* notification,
 // 	void* _context
 // )
 // {
 // 	// Must do this inside a critical section to avoid conflicts with the main thread
 // 	pthread_mutex_lock( &g_criticalSection );
-// 	NodeInfo* nodeInfo = GetNodeInfo(_notification);
-// 	// cout << _notification->GetType() << "was sent by NodeId:" << *nodeInfo << endl;
+// 	NodeInfo* nodeInfo = GetNodeInfo(notification);
+// 	// cout << notification->GetType() << "was sent by NodeId:" << *nodeInfo << endl;
 
-// //	std::cout << "Notification: " << _notification << std::endl;
+// //	std::cout << "Notification: " << notification << std::endl;
 
-// 	switch( _notification->GetType() )
+// 	switch( notification->GetType() )
 // 	{
 // 		case Notification::Type_ValueAdded:
 // 		{
-// 			if( NodeInfo* nodeInfo = GetNodeInfo( _notification ) )
+// 			if( NodeInfo* nodeInfo = GetNodeInfo( notification ) )
 // 			{
 // 				// Add the new value to our list
-// 				nodeInfo->m_values.push_back( _notification->GetValueID() );
+// 				nodeInfo->m_values.push_back( notification->GetValueID() );
 // 			}
 // 			break;
 // 		}
 
 // 		case Notification::Type_ValueRemoved:
 // 		{
-// 			if( NodeInfo* nodeInfo = GetNodeInfo( _notification ) )
+// 			if( NodeInfo* nodeInfo = GetNodeInfo( notification ) )
 // 			{
 // 				// Remove the value from out list
 // 				for( list<ValueID>::iterator it = nodeInfo->m_values.begin(); it != nodeInfo->m_values.end(); ++it )
 // 				{
-// 					if( (*it) == _notification->GetValueID() )
+// 					if( (*it) == notification->GetValueID() )
 // 					{
 // 						nodeInfo->m_values.erase( it );
 // 						break;
@@ -138,7 +138,7 @@
 // 		case Notification::Type_ValueChanged:
 // 		{
 // 			// One of the node values has changed
-// 			if( NodeInfo* nodeInfo = GetNodeInfo( _notification ) )
+// 			if( NodeInfo* nodeInfo = GetNodeInfo( notification ) )
 // 			{
 // 				(void)nodeInfo;		// placeholder for real action
 // 			}
@@ -148,7 +148,7 @@
 // 		case Notification::Type_Group:
 // 		{
 // 			// One of the node's association groups has changed
-// 			if( NodeInfo* nodeInfo = GetNodeInfo( _notification ) )
+// 			if( NodeInfo* nodeInfo = GetNodeInfo( notification ) )
 // 			{
 // 				(void)nodeInfo;		// placeholder for real action
 // 			}
@@ -159,8 +159,8 @@
 // 		{
 // 			// Add the new node to our list
 // 			NodeInfo* nodeInfo = new NodeInfo();
-// 			nodeInfo->m_homeId = _notification->GetHomeId();
-// 			nodeInfo->m_nodeId = _notification->GetNodeId();
+// 			nodeInfo->m_homeId = notification->GetHomeId();
+// 			nodeInfo->m_nodeId = notification->GetNodeId();
 // 			nodeInfo->m_polled = false;
 // 			g_nodes.push_back( nodeInfo );
 // 			break;
@@ -169,8 +169,8 @@
 // 		case Notification::Type_NodeRemoved:
 // 		{
 // 			// Remove the node from our list
-// 			uint32 const homeId = _notification->GetHomeId();
-// 			uint8 const nodeId = _notification->GetNodeId();
+// 			uint32 const homeId = notification->GetHomeId();
+// 			uint8 const nodeId = notification->GetNodeId();
 // 			for( list<NodeInfo*>::iterator it = g_nodes.begin(); it != g_nodes.end(); ++it )
 // 			{
 // 				NodeInfo* nodeInfo = *it;
@@ -188,7 +188,7 @@
 // 		{
 // 			// We have received an event from the node, caused by a
 // 			// basic_set or hail message.
-// 			if( NodeInfo* nodeInfo = GetNodeInfo( _notification ) )
+// 			if( NodeInfo* nodeInfo = GetNodeInfo( notification ) )
 // 			{
 // 				(void)nodeInfo;		// placeholder for real action
 // 			}
@@ -197,7 +197,7 @@
 
 // 		case Notification::Type_PollingDisabled:
 // 		{
-// 			if( NodeInfo* nodeInfo = GetNodeInfo( _notification ) )
+// 			if( NodeInfo* nodeInfo = GetNodeInfo( notification ) )
 // 			{
 // 				nodeInfo->m_polled = false;
 // 			}
@@ -206,7 +206,7 @@
 
 // 		case Notification::Type_PollingEnabled:
 // 		{
-// 			if( NodeInfo* nodeInfo = GetNodeInfo( _notification ) )
+// 			if( NodeInfo* nodeInfo = GetNodeInfo( notification ) )
 // 			{
 // 				nodeInfo->m_polled = true;
 // 			}
@@ -215,7 +215,7 @@
 
 // 		case Notification::Type_DriverReady:
 // 		{
-// 			g_homeId = _notification->GetHomeId();
+// 			g_homeId = notification->GetHomeId();
 // 			printf("Driver ready with HomeID: 0x%.8x\n", g_homeId);
 // 			bool ext_tx = Manager::Get()->HasExtendedTxStatus(g_homeId);
 
@@ -248,7 +248,7 @@
 // 		}
 
 // 		case Notification::Type_DriverReset:
-// 		case Notification::Type_Notification:
+// 		case Notification::Typenotification:
 // 		case Notification::Type_NodeNaming:
 // 		case Notification::Type_NodeProtocolInfo:
 // 		case Notification::Type_NodeQueriesComplete:
@@ -471,11 +471,11 @@ static bool g_menuLocked{ true };
 
 NodeInfo* GetNodeInfo
 (
-	Notification const* _notification
+	Notification const* notification
 )
 {
-	uint32 const homeId = _notification->GetHomeId();
-	uint8 const nodeId = _notification->GetNodeId();
+	uint32 const homeId = notification->GetHomeId();
+	uint8 const nodeId = notification->GetNodeId();
 	for( list<NodeInfo*>::iterator it = g_nodes.begin(); it != g_nodes.end(); ++it )
 	{
 		NodeInfo* nodeInfo = *it;
@@ -493,9 +493,9 @@ void OnNotification(Notification const* notification, void* context)
 	pthread_mutex_lock(&g_criticalSection); // lock critical section
 
 	if (g_homeId == 0)
-		g_homeId = _notification->GetHomeId();
+		g_homeId = notification->GetHomeId();
 
-	cout << ">>> NOTIFICATION: " << _notification << endl;
+	cout << ">>> NOTIFICATION: " << notification << endl;
 	cout << ">>> CONTEXT: " << context << endl;
 
 	// cout << "Before AddNode()\n";
@@ -509,9 +509,9 @@ void OnNotification(Notification const* notification, void* context)
 	// cout << "After AddNode()\n";
 
 	// cout << "---- NOTIFICATION: ----\n";
-	// cout << "Type: " << _notification->GetType() << '\n';
-	// cout << "HomeId: " << _notification->GetHomeId() << '\n';
-	// cout << "NodeId: " << _notification->GetNodeId() << '\n';
+	// cout << "Type: " << notification->GetType() << '\n';
+	// cout << "HomeId: " << notification->GetHomeId() << '\n';
+	// cout << "NodeId: " << notification->GetNodeId() << '\n';
 	// cout << "Number of nodes: " << g_nodes.size() << '\n';
 
 	NodeInfo* nodeInfo = new NodeInfo();
@@ -530,7 +530,7 @@ void OnNotification(Notification const* notification, void* context)
 	{
 		case Notification::Type_ValueAdded:
 			//We get from the notification the values's ID and name.
-			v = _notification->GetValueID();
+			v = notification->GetValueID();
 			valueLabel = Manager::Get()->GetValueLabel(v);
 
 			
@@ -548,20 +548,26 @@ void OnNotification(Notification const* notification, void* context)
 			break;
 		case Notification::Type_ValueRemoved:
 			//We get from the notification the values's ID and name.
-			v = _notification->GetValueID();
-			valueLabel = Manager::Get()->GetValueLabel(v);
+			//v = notification->GetValueID();
+			//valueLabel = Manager::Get()->GetValueLabel(v);
 
 
 			//We delete the value from the value list of the node
 
-			for(itNode = g_nodes.begin(); itNode != g_nodes.end(); ++itNode )
-			{
-				uint8 nodeId = (*itNode) -> m_nodeId;
-				if ( nodeId == v.GetNodeId() )
-					((*itNode) -> m_values).remove(v);
-			}
+			// for(itNode = g_nodes.begin(); itNode != g_nodes.end(); ++itNode )
+			// {
+			// 	uint8 nodeId = (*itNode) -> m_nodeId;
+			// 	if ( nodeId == v.GetNodeId() )
+			// 		((*itNode) -> m_values).remove(v);
+			// }
 
-			cout << "[" << time(0) << " : VALUE_REMOVED] label: " << valueLabel << ", id: " << v.GetId() << "nodeId: " << v.GetNodeId() << endl;
+			cout << "[" << time(0) << " : VALUE_REMOVED]" /*label: " << valueLabel << ", id: " << v.GetId() << "nodeId: " << v.GetNodeId()*/ << endl;
+			break;
+		case Notification::Type_ValueChanged:
+			v = notification->GetValueID();
+			valueLabel = Manager::Get()->GetValueLabel(v);
+
+			cout << "[" << time(0) << " : VALUE_CHANGED]" << "label: " << valueLabel << ", id: " << v.GetId() << "nodeId: " << v.GetNodeId() << endl;
 			break;
 		case Notification::Type_ValueRefreshed:
 			cout << NotificationService::valueRefreshed(notification, g_nodes) << endl;
@@ -571,14 +577,21 @@ void OnNotification(Notification const* notification, void* context)
 		case Notification::Type_NodeNew:
 			break;
 		case Notification::Type_NodeAdded:
-			// nodeInfo->m_homeId = notification->GetHomeId();
-			// nodeInfo->m_nodeId = notification->GetNodeId();
-			// nodeInfo->m_name = Manager::Get()->GetNodeProductName(nodeInfo->m_homeId, nodeInfo->m_nodeId);
-			// // nodeInfo->m_polled = false;
-			// nodeInfo->m_nodeType = _notification->GetType();
-			// g_nodes.push_back( nodeInfo );
+			nodeInfo->m_homeId = notification->GetHomeId();
+			nodeInfo->m_nodeId = notification->GetNodeId();
+			nodeInfo->m_name = Manager::Get()->GetNodeProductName(nodeInfo->m_homeId, nodeInfo->m_nodeId);
+			nodeInfo->m_nodeType = notification->GetType();
+			g_nodes.push_back( nodeInfo );
 			break;
 		case Notification::Type_NodeRemoved:
+			for(itNode = g_nodes.begin(); itNode != g_nodes.end(); ++itNode)
+			{
+				if((*itNode)->m_nodeId == notification->GetNodeId())
+				{
+					g_nodes.remove((*itNode));
+				}
+			}
+			cout << "[" << time(0) << " : NODE_REMOVED]" << "id: " << notification->GetNodeId() << endl;
 			break;
 		case Notification::Type_NodeProtocolInfo:
 			break;
@@ -643,22 +656,22 @@ void OnNotification(Notification const* notification, void* context)
 void menu()
 {
 	string response;
-  int choice{ 0 };
-  int x{ 5 };
-  int counterNode{0};
-  int counterValue{0};
-  list<NodeInfo*>::iterator nodeIt;
-  list<ValueID>::iterator valueIt;
-  while (x --> 0) {
-    std::cout << x << endl;
-    this_thread::sleep_for(chrono::seconds(1));
-  }
+	int choice{ 0 };
+	int x{ 5 };
+	int counterNode{0};
+	int counterValue{0};
+	list<NodeInfo*>::iterator nodeIt;
+	list<ValueID>::iterator valueIt;
+  	while (x --> 0) {
+    	std::cout << x << endl;
+    	this_thread::sleep_for(chrono::seconds(1));
+  	}
 
-  cout << "----- MENU -----" << endl << endl;
-  cout << "1. Add node" << endl;
-  cout << "2. Remove node" << endl;
-  cout << "3. Get value" << endl;
-  cout << "4. Set value" << endl;
+  	cout << "----- MENU -----" << endl << endl;
+  	cout << "1. Add node" << endl;
+  	cout << "2. Remove node" << endl;
+  	cout << "3. Get value" << endl;
+  	cout << "4. Set value" << endl;
 	cout << "5. Reset Key" << endl;
 	cout << "6. Wake Up" << endl;
 	cout << "7. Heal" << endl;
@@ -710,6 +723,30 @@ void menu()
 		// Manager::Get()->;
         break;
     case 4:
+		cout << "Choose what node you want a value from: " << endl;
+        for(nodeIt = g_nodes.begin(); nodeIt != g_nodes.end(); nodeIt++)
+		{
+			counterNode++;
+			cout << counterNode << ". " << (*nodeIt)->m_name << endl;
+			
+		}
+		cin >> response;
+		choice = stoi(response);
+		counterNode = 0;
+		for(nodeIt = g_nodes.begin(); nodeIt != g_nodes.end(); nodeIt++)
+		{
+			counterNode++;
+			if (counterNode == choice)
+			{
+				for(valueIt = (*nodeIt) -> m_values.begin(); valueIt != (*nodeIt) -> m_values.end(); valueIt++)
+				{
+					counterValue++;
+					cout << counterValue << ". " << Manager::Get()->GetValueLabel(*valueIt) << endl;
+				}
+			}
+			
+			
+		}
         break;
 	case 5:
 		break;
