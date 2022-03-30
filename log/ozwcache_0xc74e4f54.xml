@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Driver xmlns="https://github.com/OpenZWave/open-zwave" version="5" revision="172" home_id="0xc74e4f54" node_id="1" api_capabilities="8" controller_capabilities="40" poll_interval="500" poll_interval_between="true">
+<Driver xmlns="https://github.com/OpenZWave/open-zwave" version="5" revision="172" home_id="0xc74e4f54" node_id="1" api_capabilities="8" controller_capabilities="28" poll_interval="500" poll_interval_between="true">
 	<Node id="1" name="" location="" basic="2" generic="2" specific="1" type="Static PC Controller" listening="true" frequentListening="false" beaming="true" routing="true" max_baud_rate="100000" version="4" configrevision="0" query_stage="Complete">
-		<Neighbors>2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0</Neighbors>
+		<Neighbors>6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0</Neighbors>
 		<Manufacturer id="115" name="Z-Wave.Me">
 			<Product type="400" id="1" name="ZME_UZB1 USB Stick">
 				<MetaData />
@@ -42,7 +42,7 @@
 			</CommandClass>
 		</CommandClasses>
 	</Node>
-	<Node id="2" name="" location="" basic="4" generic="16" specific="5" roletype="7" devicetype="3840" nodetype="0" type="Siren" listening="false" frequentListening="true" beaming="true" routing="true" max_baud_rate="100000" version="4" configrevision="4" query_stage="Complete">
+	<Node id="3" name="" location="" basic="4" generic="16" specific="5" roletype="7" devicetype="3840" nodetype="0" type="Siren" listening="false" frequentListening="true" beaming="true" routing="true" max_baud_rate="100000" version="4" configrevision="4" query_stage="Complete">
 		<Neighbors>1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0</Neighbors>
 		<Manufacturer id="258" name="Shenzhen Neo Electronics Co Ltd">
 			<Product type="3" id="1088" name="Siren Alarm">
@@ -289,7 +289,7 @@
 					<StaticRequests>4</StaticRequests>
 				</State>
 				<Instance index="1" />
-				<Value type="byte" genre="user" instance="1" index="0" label="Battery Level" units="%" read_only="true" write_only="false" verify_changes="false" poll_intensity="0" min="0" max="255" value="93">
+				<Value type="byte" genre="user" instance="1" index="0" label="Battery Level" units="%" read_only="true" write_only="false" verify_changes="false" poll_intensity="0" min="0" max="255" value="91">
 					<Help>Current Battery Level</Help>
 				</Value>
 			</CommandClass>

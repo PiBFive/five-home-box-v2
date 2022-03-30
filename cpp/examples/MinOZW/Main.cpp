@@ -657,6 +657,10 @@ void menu()
 {
 	string response;
 	int choice{ 0 };
+	int choiceNode{ 0 };
+	string currentV;
+	string* currentVPtr = &currentV;
+	int choiceValue{0};
 	int x{ 5 };
 	int counterNode{0};
 	int counterValue{0};
@@ -702,12 +706,12 @@ void menu()
 			
 		}
 		cin >> response;
-		choice = stoi(response);
+		choiceNode = stoi(response);
 		counterNode = 0;
 		for(nodeIt = g_nodes.begin(); nodeIt != g_nodes.end(); nodeIt++)
 		{
 			counterNode++;
-			if (counterNode == choice)
+			if (counterNode == choiceNode)
 			{
 				for(valueIt = (*nodeIt) -> m_values.begin(); valueIt != (*nodeIt) -> m_values.end(); valueIt++)
 				{
@@ -723,7 +727,7 @@ void menu()
 		// Manager::Get()->;
         break;
     case 4:
-		cout << "Choose what node you want a value from: " << endl;
+		cout << "Choose what node you want to set a value from: " << endl;
         for(nodeIt = g_nodes.begin(); nodeIt != g_nodes.end(); nodeIt++)
 		{
 			counterNode++;
@@ -731,22 +735,41 @@ void menu()
 			
 		}
 		cin >> response;
-		choice = stoi(response);
+		choiceNode = stoi(response);
 		counterNode = 0;
+		cout << "Choose the value to set: " << endl;
 		for(nodeIt = g_nodes.begin(); nodeIt != g_nodes.end(); nodeIt++)
 		{
 			counterNode++;
-			if (counterNode == choice)
+			if (counterNode == choiceNode)
 			{
 				for(valueIt = (*nodeIt) -> m_values.begin(); valueIt != (*nodeIt) -> m_values.end(); valueIt++)
 				{
 					counterValue++;
 					cout << counterValue << ". " << Manager::Get()->GetValueLabel(*valueIt) << endl;
 				}
+				break;
 			}
-			
-			
 		}
+		cin >> response;
+		choiceValue = stoi(response);
+		counterNode = 0;
+		counterValue = 0;
+		
+		for(valueIt = (*nodeIt) -> m_values.begin(); valueIt != (*nodeIt) -> m_values.end(); valueIt++)
+		{
+			counterValue++;
+			if (counterValue == choiceValue)
+				{
+					Manager::Get()->GetValueAsString(*valueIt, currentVPtr);
+					cout << "The current value is: " << currentV << endl;
+					cout << "Enter the new value: " << endl;
+					cin >> response;
+					Manager::Get()->SetValue(*valueIt, response);
+				}
+		}
+			
+
         break;
 	case 5:
 		break;
