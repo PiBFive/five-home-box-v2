@@ -104,21 +104,26 @@ void onNotification(Notification const* notification, void* context) {
 			break;
 		case Notification::Type_ValueRemoved:
 			//We get from the notification the values's ID and name.
-			v = notification->GetValueID();
+			//v = notification->GetValueID();
+			//valueLabel = Manager::Get()->GetValueLabel(v);
 
-			//We delete the value from the value list of the node.
-			for(it = g_nodes.begin(); it != g_nodes.end(); ++it )
-			{
-				uint8 nodeId = (*it) -> m_nodeId;
 
-				if (nodeId == v.GetNodeId())
-					((*it) -> m_values).remove(v);
-			}
+			//We delete the value from the value list of the node
 
-			// cout << "[" << time(0) << " : VALUE_REMOVED] id: " << v.GetId() << "nodeId: " << v.GetNodeId() << endl;
+			// for(itNode = g_nodes.begin(); itNode != g_nodes.end(); ++itNode )
+			// {
+			// 	uint8 nodeId = (*itNode) -> m_nodeId;
+			// 	if ( nodeId == v.GetNodeId() )
+			// 		((*itNode) -> m_values).remove(v);
+			// }
+
+			cout << "[" << time(0) << " : VALUE_REMOVED]" /*label: " << valueLabel << ", id: " << v.GetId() << "nodeId: " << v.GetNodeId()*/ << endl;
 			break;
 		case Notification::Type_ValueChanged:
-			// cout << NotificationService::valueChanged(notification, g_nodes) << endl;
+			v = notification->GetValueID();
+			valueLabel = Manager::Get()->GetValueLabel(v);
+
+			cout << "[" << time(0) << " : VALUE_CHANGED]" << "label: " << valueLabel << ", id: " << v.GetId() << "nodeId: " << v.GetNodeId() << endl;
 			break;
 		case Notification::Type_ValueRefreshed:
 			// cout << NotificationService::valueRefreshed(notification, g_nodes) << endl;
@@ -140,11 +145,18 @@ void onNotification(Notification const* notification, void* context) {
 			nodeInfo->m_homeId = notification->GetHomeId();
 			nodeInfo->m_nodeId = notification->GetNodeId();
 			nodeInfo->m_name = Manager::Get()->GetNodeProductName(nodeInfo->m_homeId, nodeInfo->m_nodeId);
-			// nodeInfo->m_polled = false;
 			nodeInfo->m_nodeType = notification->GetType();
 			g_nodes.push_back( nodeInfo );
 			break;
 		case Notification::Type_NodeRemoved:
+			for(itNode = g_nodes.begin(); itNode != g_nodes.end(); ++itNode)
+			{
+				if((*itNode)->m_nodeId == notification->GetNodeId())
+				{
+					g_nodes.remove((*itNode));
+				}
+			}
+			cout << "[" << time(0) << " : NODE_REMOVED]" << "id: " << notification->GetNodeId() << endl;
 			break;
 		case Notification::Type_NodeProtocolInfo:
 			break;
@@ -253,7 +265,7 @@ void menu() {
 		cout << "\nChoose what node you want a value from: " << endl;
 
 		cin >> response;
-		choice = stoi(response);
+		choiceNode = stoi(response);
 		counterNode = 0;
 		
 		for(nodeIt = g_nodes.begin(); nodeIt != g_nodes.end(); nodeIt++){
@@ -285,8 +297,49 @@ void menu() {
 
         break;
     case 4:
+		cout << "Choose what node you want to set a value from: " << endl;
+        for(nodeIt = g_nodes.begin(); nodeIt != g_nodes.end(); nodeIt++)
+		{
+			counterNode++;
+			cout << counterNode << ". " << (*nodeIt)->m_name << endl;
+			
+		}
+		cin >> response;
+		choiceNode = stoi(response);
+		counterNode = 0;
+		cout << "Choose the value to set: " << endl;
+		for(nodeIt = g_nodes.begin(); nodeIt != g_nodes.end(); nodeIt++)
+		{
+			counterNode++;
+			if (counterNode == choiceNode)
+			{
+				for(valueIt = (*nodeIt) -> m_values.begin(); valueIt != (*nodeIt) -> m_values.end(); valueIt++)
+				{
+					counterValue++;
+					cout << counterValue << ". " << Manager::Get()->GetValueLabel(*valueIt) << endl;
+				}
+				break;
+			}
+		}
+		cin >> response;
+		choiceValue = stoi(response);
+		counterNode = 0;
+		counterValue = 0;
+		
+		for(valueIt = (*nodeIt) -> m_values.begin(); valueIt != (*nodeIt) -> m_values.end(); valueIt++)
+		{
+			counterValue++;
+			if (counterValue == choiceValue)
+				{
+					Manager::Get()->GetValueAsString(*valueIt, currentVPtr);
+					cout << "The current value is: " << currentV << endl;
+					cout << "Enter the new value: " << endl;
+					cin >> response;
+					Manager::Get()->SetValue(*valueIt, response);
+				}
+		}
+			
 
-		// Internal::CC::SwitchBinary::Create(g_homeId, 11)->GetValue()
         break;
 	case 5:
 		break;
