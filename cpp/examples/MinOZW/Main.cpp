@@ -1,4 +1,6 @@
 #include <iostream>
+#include <algorithm>
+#include <cstddef>
 #include "Manager.h"
 #include "Options.h"
 #include "Notification.h"
@@ -22,6 +24,8 @@ static pthread_mutex_t g_criticalSection;
 static pthread_cond_t  initCond  = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t initMutex;
 static bool g_menuLocked{ true };
+
+static list<string> g_setTypes = {"Color", "Switch", "Level"};
 
 NodeInfo* newNode(Notification* const notification);
 void onNotification(Notification const* notification, void* context);
@@ -54,10 +58,10 @@ int main(int argc, char const *argv[])
 	string port = "/dev/ttyACM0";
 	Manager::Get()->AddDriver(port);
 
-	while (true) {
-		thread t1(menu);
-		t1.join();
-	}
+	
+	thread t1(menu);
+	t1.join();
+
 
 	pthread_cond_wait(&initCond, &initMutex);
 	pthread_mutex_unlock( &g_criticalSection );
@@ -401,6 +405,7 @@ void menu() {
 	cout << "5. Reset Key" << endl;
 	cout << "6. Wake Up" << endl;
 	cout << "7. Heal" << endl;
+	cout << "8. NewSetValue" << endl;
 
 	cout << "Please choose: ";
     cin >> response;
@@ -448,9 +453,6 @@ void menu() {
 						cout << Manager::Get()->GetValueLabel(*valueIt) << valueIt->GetAsString() << endl;
 						Manager::Get()->GetValueAsString((*valueIt), ptr_container);
 						cout << "Current value: " << *ptr_container << endl;
-						cout << "Set to what ? ";
-						cin >> response;
-						Manager::Get()->SetValue((*valueIt), response);
 						break;
 					}
 				}
@@ -478,7 +480,6 @@ void menu() {
 			{
 				for(valueIt = (*nodeIt) -> m_values.begin(); valueIt != (*nodeIt) -> m_values.end(); valueIt++)
 				{
-					counterValue++;
 					cout << counterValue << ". " << Manager::Get()->GetValueLabel(*valueIt) << endl;
 					counterValue++;
 				}
@@ -496,30 +497,35 @@ void menu() {
 						cout << "Current value: " << *ptr_container << endl;
 						cout << "Set to what ? ";
 						cin >> response;
+						int test = 0;
+						int* testptr = &test;
+						//setUnit((*valueIt));
 						Manager::Get()->SetValue((*valueIt), response);
+						Manager::Get()->GetValueAsInt((*valueIt), testptr);
+						cout << *testptr;
 						break;
 					}
 				}
 				break;
 			}
 		}
-		cin >> response;
-		choice = stoi(response);
-		counterNode = 0;
-		counterValue = 0;
+		// cin >> response;
+		// choice = stoi(response);
+		// counterNode = 0;
+		// counterValue = 0;
 		
-		for(valueIt = (*nodeIt) -> m_values.begin(); valueIt != (*nodeIt) -> m_values.end(); valueIt++)
-		{
-			counterValue++;
-			if (counterValue == choice)
-				{
-					Manager::Get()->GetValueAsString(*valueIt, ptr_container);
-					cout << "The current value is: " << ptr_container << endl;
-					cout << "Enter the new value: " << endl;
-					cin >> response;
-					Manager::Get()->SetValue(*valueIt, response);
-				}
-		}
+		// for(valueIt = (*nodeIt) -> m_values.begin(); valueIt != (*nodeIt) -> m_values.end(); valueIt++)
+		// {
+		// 	counterValue++;
+		// 	if (counterValue == choice)
+		// 		{
+		// 			Manager::Get()->GetValueAsString(*valueIt, ptr_container);
+		// 			cout << "The current value is: " << ptr_container << endl;
+		// 			cout << "Enter the new value: " << endl;
+		// 			cin >> response;
+		// 			Manager::Get()->SetValue(*valueIt, response);
+		// 		}
+		// }
 
         break;
 	case 5:
@@ -531,6 +537,104 @@ void menu() {
 		break;
 	case 7:
 		break;
+	case 8:
+		for (nodeIt = g_nodes.begin(); nodeIt != g_nodes.end(); nodeIt++)
+		{
+			cout << unsigned((*nodeIt)->m_nodeId) << ". " << (*nodeIt)->m_name << endl;
+		}
+
+		cout << "\nChoose what node you want a value from: " << endl;
+
+		cin >> response;
+		choice = stoi(response);
+		counterNode = 0;
+		for (nodeIt = g_nodes.begin(); nodeIt != g_nodes.end(); nodeIt++)
+		{
+			counterNode++;
+			if ((*nodeIt)->m_nodeId == choice)
+			{
+				for (valueIt = (*nodeIt)->m_values.begin(); valueIt != (*nodeIt)->m_values.end(); valueIt++)
+				{
+					if (ValueID::ValueType_List == (*valueIt).GetType())
+					{
+						counterValue++;
+						cout << counterValue << ". " << Manager::Get()->GetValueLabel((*valueIt)) << endl;
+					}
+					
+					
+					if ((std::find(g_setTypes.begin(), g_setTypes.end(), Manager::Get()->GetValueLabel((*valueIt))) != g_setTypes.end()))
+					{
+						counterValue++;
+						cout << counterValue << ". " << Manager::Get()->GetValueLabel((*valueIt)) << endl;
+					}
+				}
+
+				break;
+			}
+		}
+		cin >> response;
+		choice = stoi(response);
+		counterValue = 0;
+		for (valueIt = (*nodeIt)->m_values.begin(); valueIt != (*nodeIt)->m_values.end(); valueIt++)
+		{
+			if (ValueID::ValueType_List == (*valueIt).GetType())
+			{
+				counterValue++;
+				if (choice == counterValue)
+				{
+					setList((*valueIt));
+				}
+				
+			}else if ((std::find(g_setTypes.begin(), g_setTypes.end(), Manager::Get()->GetValueLabel((*valueIt))) != g_setTypes.end()))
+			{
+				counterValue++;
+				if (choice == counterValue)
+				{
+					string valLabel = Manager::Get()->GetValueLabel(*valueIt);
+					cout << "You chose " << valLabel << endl;
+					Manager::Get()->GetValueAsString((*valueIt), ptr_container);
+					// cout << "Current value: " << *ptr_container << endl;
+					// cout << "Set to what ? ";
+					//cin >> response;
+
+					//Checking value type to choose the right method
+					if(valLabel == "Switch"){
+						cout << "True(1) or False(0) ?" << endl;
+						cin >> response;
+						choice << stoi(response);
+						setSwitch((*valueIt), choice);
+					}else if(valLabel == "Color")
+					{
+						setColor(*valueIt);
+					} else if(valLabel == "Level")
+					{
+						cout << "Choose a value between:" << endl << "1. Very High\n" << "2. High\n" << "3. Medium\n" << "4. Low\n" << "5. Very Low\n"; 
+						cin >> response;
+						choice = stoi(response);
+						switch(choice){
+							case 1:
+								setIntensity((*valueIt), IntensityScale::VERY_HIGH);
+								break;
+							case 2:
+								setIntensity((*valueIt), IntensityScale::HIGH);
+								break;
+							case 3:
+								setIntensity((*valueIt), IntensityScale::MEDIUM);
+								break;
+							case 4:
+								setIntensity((*valueIt), IntensityScale::LOW);
+								break;
+							case 5:
+								setIntensity((*valueIt), IntensityScale::VERY_LOW);
+								break;
+						}
+						
+					}
+					//Manager::Get()->SetValue((*valueIt), response);
+					break;
+				}
+			}
+		}
     default:
         cout << "You must enter 1, 2, 3 or 4." << endl;
         break;
