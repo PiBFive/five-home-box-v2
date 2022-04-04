@@ -95,11 +95,13 @@ bool Five::setSwitch(ValueID valueId, bool state)
 {   
     if(state)
     {
-        Manager::Get()->SetValue(valueId, "True");
+        cout << "if" << endl;
+        Manager::Get()->SetValue(valueId, state);
     }
     else
     {
-        Manager::Get()->SetValue(valueId, "False");
+        cout << "else" << endl;
+        Manager::Get()->SetValue(valueId, state);
     }
     return true;
 }
@@ -173,6 +175,19 @@ bool Five::setList(ValueID valueId){
         }
     }
     //Manager::Get()->SetValue(valueId, UnitName);
+    return true;
+}
+
+bool Five::setVolume(ValueID valueId, IntensityScale intensity){
+    Manager::Get()->SetValue(valueId, to_string(intensity));
+    return true;
+}
+
+bool Five::setDuration(ValueID valueId){
+    string response;
+    cout << "Please enter a duration in seconds:" << endl;
+    cin >> response;
+    Manager::Get()->SetValue(valueId, response);
     return true;
 }
 

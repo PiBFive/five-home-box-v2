@@ -30,7 +30,7 @@ static time_t timet_start = chrono::high_resolution_clock::to_time_t(start);
 static time_t *ptr_start = &timet_start;
 static tm* tm_start = localtime(ptr_start);
 
-static list<string> g_setTypes = {"Color", "Switch", "Level"};
+static list<string> g_setTypes = {"Color", "Switch", "Level", "Duration", "Volume"};
 
 NodeInfo* newNode(Notification* const notification);
 void onNotification(Notification const* notification, void* context);
@@ -400,10 +400,11 @@ void onNotification(Notification const* notification, void* context) {
 }
 
 void menu() {
-	while (true) {
+	while(true){
 		string response;
+		list<string>::iterator sIt;
 		int choice{ 0 };
-		// int x{ 5 };
+		int x{ 5 };
 		int counterNode{0};
 		int counterValue{0};
 		list<NodeInfo*>::iterator nodeIt;
@@ -414,10 +415,14 @@ void menu() {
 		
 		int status;
 
-		// while (x --> 0) {
-		// 	std::cout << x << endl;
-		// 	this_thread::sleep_for(chrono::seconds(1));
-		// }
+		while (x --> 0) {
+			std::cout << x << endl;
+			this_thread::sleep_for(chrono::seconds(1));
+		}
+
+		if (std::find(g_setTypes.begin(), g_setTypes.end(), "Duration") != g_setTypes.end()){
+			cout << "Works" << endl;
+		}
 
 		cout << "----- MENU -----" << endl << endl;
 		cout << "1. Add node" << endl;
@@ -427,6 +432,7 @@ void menu() {
 		cout << "5. Reset Key" << endl;
 		cout << "6. Wake Up" << endl;
 		cout << "7. Heal" << endl;
+		cout << "8. NewSetValue" << endl;
 
 		cout << "Please choose: ";
 		cin >> response;
@@ -451,7 +457,7 @@ void menu() {
 				cout << counterNode << ". " << (*nodeIt)->m_name << endl;
 			}
 
-			cout << "\nChoose what node you want a value from: " << endl;
+			cout << "\nChoose the node from which you want the values: " << endl;
 
 			cin >> response;
 			choice = stoi(response);
@@ -461,25 +467,23 @@ void menu() {
 				counterNode++;
 				if (counterNode == choice) {
 					for(valueIt = (*nodeIt) -> m_values.begin(); valueIt != (*nodeIt) -> m_values.end(); valueIt++) {
-						cout << counterValue << ". " << Manager::Get()->GetValueLabel(*valueIt) << endl;
+						Manager::Get()->GetValueAsString((*valueIt), ptr_container);
+						cout << counterValue << ". " << Manager::Get()->GetValueLabel(*valueIt) << " : " << container << endl;
 						counterValue++;
 					}
 					
-					cout << "\nChoose a valueID: ";
-					cin >> response;
-					choice = stoi(response);
+					// cout << "\nChoose a valueID: ";
+					// cin >> response;
+					// choice = stoi(response);
 
-					for (valueIt = (*nodeIt)->m_values.begin(); valueIt != (*nodeIt)->m_values.end(); valueIt++) {
-						if (choice == std::distance((*nodeIt)->m_values.begin(), valueIt)) {
-							cout << Manager::Get()->GetValueLabel(*valueIt) << valueIt->GetAsString() << endl;
-							Manager::Get()->GetValueAsString((*valueIt), ptr_container);
-							cout << "Current value: " << *ptr_container << endl;
-							cout << "Set to what ? ";
-							cin >> response;
-							Manager::Get()->SetValue((*valueIt), response);
-							break;
-						}
-					}
+					// for (valueIt = (*nodeIt)->m_values.begin(); valueIt != (*nodeIt)->m_values.end(); valueIt++) {
+					// 	if (choice == std::distance((*nodeIt)->m_values.begin(), valueIt)) {
+					// 		cout << Manager::Get()->GetValueLabel(*valueIt) << valueIt->GetAsString() << endl;
+					// 		Manager::Get()->GetValueAsString((*valueIt), ptr_container);
+					// 		cout << "Current value: " << *ptr_container << endl;
+					// 		break;
+					// 	}
+					// }
 				}
 			}
 			break;
@@ -504,7 +508,6 @@ void menu() {
 				{
 					for(valueIt = (*nodeIt) -> m_values.begin(); valueIt != (*nodeIt) -> m_values.end(); valueIt++)
 					{
-						counterValue++;
 						cout << counterValue << ". " << Manager::Get()->GetValueLabel(*valueIt) << endl;
 						counterValue++;
 					}
@@ -522,20 +525,55 @@ void menu() {
 							cout << "Current value: " << *ptr_container << endl;
 							cout << "Set to what ? ";
 							cin >> response;
+							// int test = 0;
+							// int* testptr = &test;
+							//setUnit((*valueIt));
 							Manager::Get()->SetValue((*valueIt), response);
+							//Manager::Get()->GetValueAsInt((*valueIt), testptr);
+							//cout << *testptr;
 							break;
 						}
 					}
 					break;
 				}
 			}
-        break;
+			// cin >> response;
+			// choice = stoi(response);
+			// counterNode = 0;
+			// counterValue = 0;
+			
+			// for(valueIt = (*nodeIt) -> m_values.begin(); valueIt != (*nodeIt) -> m_values.end(); valueIt++)
+			// {
+			// 	counterValue++;
+			// 	if (counterValue == choice)
+			// 		{
+			// 			Manager::Get()->GetValueAsString(*valueIt, ptr_container);
+			// 			cout << "The current value is: " << ptr_container << endl;
+			// 			cout << "Enter the new value: " << endl;
+			// 			cin >> response;
+			// 			Manager::Get()->SetValue(*valueIt, response);
+			// 		}
+			// }
+
+			break;
 		case 5:
 			cout << "Enter file to remove: ";
 			cin >> fileName;
 		
 			break;
 		case 6:
+			for (nodeIt = g_nodes.begin(); nodeIt != g_nodes.end(); nodeIt++){
+				cout << unsigned((*nodeIt)->m_nodeId) << ". " << (*nodeIt)->m_name << endl;
+			}
+			cout << "Which node do you want to heal ?";
+			cin >> response;
+			choice = stoi(response);
+
+			for (nodeIt = g_nodes.begin(); nodeIt != g_nodes.end(); nodeIt++){
+				if ((*nodeIt)->m_nodeId == choice){
+					Manager::Get()->HealNetworkNode((*nodeIt)->m_homeId, (*nodeIt)->m_nodeId, true);
+				}
+			}
 			break;
 		case 7:
 			break;
@@ -549,10 +587,9 @@ void menu() {
 
 			cin >> response;
 			choice = stoi(response);
-			counterNode = 0;
+			//counterNode = 0;
 			for (nodeIt = g_nodes.begin(); nodeIt != g_nodes.end(); nodeIt++)
 			{
-				counterNode++;
 				if ((*nodeIt)->m_nodeId == choice)
 				{
 					for (valueIt = (*nodeIt)->m_values.begin(); valueIt != (*nodeIt)->m_values.end(); valueIt++)
@@ -563,12 +600,14 @@ void menu() {
 							cout << counterValue << ". " << Manager::Get()->GetValueLabel((*valueIt)) << endl;
 						}
 						
-						
-						if ((std::find(g_setTypes.begin(), g_setTypes.end(), Manager::Get()->GetValueLabel((*valueIt))) != g_setTypes.end()))
-						{
-							counterValue++;
-							cout << counterValue << ". " << Manager::Get()->GetValueLabel((*valueIt)) << endl;
+						for(sIt = g_setTypes.begin(); sIt != g_setTypes.end(); ++sIt){
+							if (Manager::Get()->GetValueLabel((*valueIt)).find((*sIt)) != string::npos)
+							{
+								counterValue++;
+								cout << counterValue << ". " << Manager::Get()->GetValueLabel((*valueIt)) << endl;
+							}
 						}
+						
 					}
 
 					break;
@@ -587,7 +626,84 @@ void menu() {
 						setList((*valueIt));
 					}
 					
-				}else if ((std::find(g_setTypes.begin(), g_setTypes.end(), Manager::Get()->GetValueLabel((*valueIt))) != g_setTypes.end()))
+				}else for (sIt = g_setTypes.begin(); sIt != g_setTypes.end(); ++sIt){
+					if(Manager::Get()->GetValueLabel((*valueIt)).find((*sIt)) != string::npos){
+						counterValue++;
+						if (choice == counterValue)
+						{
+							string valLabel = Manager::Get()->GetValueLabel(*valueIt);
+							cout << "You chose " << valLabel << endl;
+							Manager::Get()->GetValueAsString((*valueIt), ptr_container);
+							// cout << "Current value: " << *ptr_container << endl;
+							// cout << "Set to what ? ";
+							//cin >> response;
+
+							//Checking value type to choose the right method
+							if(valLabel.find("Switch") != string::npos){
+								cout << "True(1) or False(0) ?" << endl;
+								cin >> response;
+								choice = stoi(response);
+								setSwitch((*valueIt), choice);
+							}else if(valLabel.find("Color") != string::npos)
+							{
+								setColor(*valueIt);
+							} else if(valLabel.find("Level") != string::npos)
+							{
+								cout << "Choose a value between:" << endl << "1. Very High\n" << "2. High\n" << "3. Medium\n" << "4. Low\n" << "5. Very Low\n"; 
+								cin >> response;
+								choice = stoi(response);
+								switch(choice){
+									case 1:
+										setIntensity((*valueIt), IntensityScale::VERY_HIGH);
+										break;
+									case 2:
+										setIntensity((*valueIt), IntensityScale::HIGH);
+										break;
+									case 3:
+										setIntensity((*valueIt), IntensityScale::MEDIUM);
+										break;
+									case 4:
+										setIntensity((*valueIt), IntensityScale::LOW);
+										break;
+									case 5:
+										setIntensity((*valueIt), IntensityScale::VERY_LOW);
+										break;
+								}
+								
+							}else if(valLabel.find("Volume") != string::npos)
+							{
+								cout << "Choose a value between:" << endl << "1. Very High\n" << "2. High\n" << "3. Medium\n" << "4. Low\n" << "5. Very Low\n"; 
+								cin >> response;
+								choice = stoi(response);
+								switch(choice){
+									case 1:
+										setIntensity((*valueIt), IntensityScale::VERY_HIGH);
+										break;
+									case 2:
+										setIntensity((*valueIt), IntensityScale::HIGH);
+										break;
+									case 3:
+										setIntensity((*valueIt), IntensityScale::MEDIUM);
+										break;
+									case 4:
+										setIntensity((*valueIt), IntensityScale::LOW);
+										break;
+									case 5:
+										setIntensity((*valueIt), IntensityScale::VERY_LOW);
+										break;
+								}
+								
+							}else if(valLabel.find("Duration") != string::npos)
+							{
+								setDuration((*valueIt));
+							}
+							//Manager::Get()->SetValue((*valueIt), response);
+							break;
+						}
+					}
+				}
+				
+				/*if ((std::find(g_setTypes.begin(), g_setTypes.end(), Manager::Get()->GetValueLabel((*valueIt))) != g_setTypes.end()))
 				{
 					counterValue++;
 					if (choice == counterValue)
@@ -603,7 +719,7 @@ void menu() {
 						if(valLabel == "Switch"){
 							cout << "True(1) or False(0) ?" << endl;
 							cin >> response;
-							choice << stoi(response);
+							choice = stoi(response);
 							setSwitch((*valueIt), choice);
 						}else if(valLabel == "Color")
 						{
@@ -635,7 +751,7 @@ void menu() {
 						//Manager::Get()->SetValue((*valueIt), response);
 						break;
 					}
-				}
+				}*/
 			}
 		default:
 			cout << "You must enter 1, 2, 3 or 4." << endl;
@@ -648,12 +764,22 @@ void menu() {
 			for (int i = 0; i < fileName.length(); i++) {
 				cout << arr[i];
 			}
-
-			// Manager::Get()->AddNode(g_homeId, false);
-			// Manager::Get()->RemoveNode(g_homeId);
-			// cout << "Node removed" << endl;
-			// Manager::Get()->TestNetwork(g_homeId, 5);
-			// cout << "Name: " << Manager::Get()->GetNodeProductName(g_homeId, 2).c_str() << endl;
+			cout << endl;
+			// int i;
+			// int counter{ fileName.size() + 1 };
+			// char 
+			// const char *fileChar = fileName.c_str();
+			// cout << (*fileChar)[0] << (*fileChar)[1] << endl;
+			// char[counter] fileChar = 
+			// for (i = 0; i < fileName.size(); i++) {
+			// 	fileChar app fileName.at(i);
+			// }
 		}
+
+		// Manager::Get()->AddNode(g_homeId, false);
+		// Manager::Get()->RemoveNode(g_homeId);
+		// cout << "Node removed" << endl;
+		// Manager::Get()->TestNetwork(g_homeId, 5);
+		// cout << "Name: " << Manager::Get()->GetNodeProductName(g_homeId, 2).c_str() << endl;
 	}
 }
