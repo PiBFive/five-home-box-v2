@@ -23,6 +23,7 @@ using namespace OpenZWave;
 using namespace Five;
 using namespace std;
 
+//Returns the node object whose ID you've given
 NodeInfo* Five::getNode(uint8 nodeID, list<NodeInfo*> *nodes) {
     list<NodeInfo*>::iterator it;
     for (it = nodes->begin(); it != nodes->end(); it++) {
@@ -33,6 +34,7 @@ NodeInfo* Five::getNode(uint8 nodeID, list<NodeInfo*> *nodes) {
     return NULL;
 }
 
+//Creates a node object containing all the informations about the node whose ID you've given
 NodeInfo Five::getNodeConfig(uint32 homeId, uint8 nodeId, list<NodeInfo*> *nodes)
 {
     list<NodeInfo*>::iterator it;
@@ -51,17 +53,6 @@ NodeInfo Five::getNodeConfig(uint32 homeId, uint8 nodeId, list<NodeInfo*> *nodes
     }
     return node;
     
-}
-bool Five::valueAdded(Notification const* notification, list<NodeInfo*> *nodes) {
-    return true;
-}
-
-bool Five::valueRefreshed(Notification const* notification, list<NodeInfo*> *nodes) {
-    return true;
-}
-
-bool Five::valueRemoved(Notification const* notification, list<NodeInfo*> *nodes) {
-    return true;
 }
 
 /// A value has changed on the Z-Wave network and this is a different value.
@@ -101,6 +92,7 @@ bool Five::valueChanged(Notification const* notification, list<NodeInfo*> *nodes
     return true;
 }
 
+//Allows to turn on or off any object who has a switch parameter
 bool Five::setSwitch(ValueID valueId, bool state) {   
     string answer;
     cout << "true(1) or false(0) ?" << endl;
@@ -117,12 +109,13 @@ bool Five::setSwitch(ValueID valueId, bool state) {
 }
 
 
-
+//Allows to set the value of an intensity type value
 bool Five::setIntensity(ValueID valueId, IntensityScale intensity) {
     Manager::Get()->SetValue(valueId, to_string(intensity));
     return true;
 }
 
+//Allows to change the color of a light by giving an hexadecimal value
 bool Five::setColor(ValueID valueId)
 {
     cout << "Enter hexadecimal color" << endl;
@@ -132,6 +125,7 @@ bool Five::setColor(ValueID valueId)
     return true;
 }
 
+//Allows to change the value of a list type value by displaying all possible values
 bool Five::setList(ValueID valueId){
     vector<string> vectS;
     vector<string> *vectSPtr = &vectS;
@@ -165,11 +159,13 @@ bool Five::setList(ValueID valueId){
     return true;
 }
 
+//Allows to set the intensity of a volume parameter
 bool Five::setVolume(ValueID valueId, IntensityScale intensity){
     Manager::Get()->SetValue(valueId, to_string(intensity));
     return true;
 }
 
+//Allows to set the value of a duration parameter
 bool Five::setDuration(ValueID valueId) {
     string response;
     cout << "Please enter a duration in seconds:" << endl;
@@ -178,6 +174,7 @@ bool Five::setDuration(ValueID valueId) {
     return true;
 }
 
+//Allows to set the value of a int parameter
 bool Five::setInt(ValueID valueId){
     string response;
     cout << "Please enter a value in Int:" << endl;
@@ -186,6 +183,7 @@ bool Five::setInt(ValueID valueId){
     return true;
 }
 
+//Allows to set the value of a boolean parameter
 bool Five::setBool(ValueID valueId)
 {   
     string answer;
@@ -202,6 +200,7 @@ bool Five::setBool(ValueID valueId)
     return true;
 }
 
+//Allows to push or release a button parameter
 bool Five::setButton(ValueID valueId){
     string input;
     cout << "Press a key to push button" << endl;
@@ -241,6 +240,7 @@ bool Five::isNodeNew(uint8 nodeID, list<NodeInfo*> *nodes) {
 	return true;
 }
 
+//Returns the number of dead nodes in <nodes>
 int Five::deadNodeSum(list<NodeInfo*> *nodes) {
 	int counter{ 0 };
 	list<NodeInfo*>::iterator it;
@@ -252,10 +252,12 @@ int Five::deadNodeSum(list<NodeInfo*> *nodes) {
 	return counter;
 }
 
+//Returns the number of alive nodes in <nodes>
 int Five::aliveNodeSum(list<NodeInfo*> *nodes) {
 	return (nodes->size() - 1) - deadNodeSum(nodes);
 }
 
+//Check if type <needle> is in list <haystack>
 bool Five::containsType(Notification::NotificationType needle, vector<Notification::NotificationType> haystack) {
     for (int i = 0; i < int(haystack.capacity()); i++) {
         if (needle == haystack[i]) {
@@ -265,6 +267,7 @@ bool Five::containsType(Notification::NotificationType needle, vector<Notificati
     return false;
 }
 
+//Check if node <needle> is in list <haystack>
 bool Five::containsNodeID(uint8 needle, list<NodeInfo*> haystack) {
     list<NodeInfo*>::iterator it;
     for (it = haystack.begin(); it != haystack.end(); it++) {
@@ -275,12 +278,6 @@ bool Five::containsNodeID(uint8 needle, list<NodeInfo*> haystack) {
     return false;
 }
 
-bool Five::isNodeAlive(Notification notif, list<NodeInfo*> *nodes, vector<Notification::NotificationType> aliveNotifications) {
-    // uint8 nodeID{ valueID.GetNodeId() };
-    // bool containsType{ Five::ContainsType(notif.GetType(), aliveNotifications) };
-    return true;
-}
-
 // Refresh members in the oldNodeInfo thanks to this valueID.
 void Five::refreshNode(ValueID valueID, NodeInfo* oldNodeInfo) {
 	oldNodeInfo->m_homeId = valueID.GetHomeId();
@@ -289,6 +286,7 @@ void Five::refreshNode(ValueID valueID, NodeInfo* oldNodeInfo) {
 	oldNodeInfo->m_values.push_back(valueID);
 }
 
+//Takes the node linked to <notification>, and adds it to <node>
 void Five::pushNode(Notification const *notification, list<NodeInfo*> *nodes) {
 	NodeInfo* n{ createNode(notification) };
 	uint8 nodeID{ notification->GetNodeId() };
@@ -298,6 +296,7 @@ void Five::pushNode(Notification const *notification, list<NodeInfo*> *nodes) {
 	}
 }
 
+//Takes the node linked to <notification>, and removes it from <node>
 void Five::removeNode(Notification const *notification, list<NodeInfo*> *nodes) {
     uint8 nodeID{ notification->GetNodeId() };
 	list<NodeInfo*>::iterator it;
@@ -312,8 +311,8 @@ void Five::removeNode(Notification const *notification, list<NodeInfo*> *nodes) 
 	}
 }
 
+//Adds a value to a node's values list
 bool Five::addValue(ValueID valueID, NodeInfo *node) {
-	// uint8 nodeID{ valueID.GetNodeId() };
 	bool isNew{ true };
     
     list<ValueID>::iterator it;
