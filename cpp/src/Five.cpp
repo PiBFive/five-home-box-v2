@@ -16,6 +16,7 @@
 #include <iostream>
 #include <thread>
 #include <fstream>
+#include <vector>
 
 #define PORT 5101
 
@@ -58,7 +59,11 @@ NodeInfo Five::getNodeConfig(uint32 homeId, uint8 nodeId, list<NodeInfo*> *nodes
 		node.m_neighbors[i] = bitmapPixel;
 	}
 
-    Manager::Get()->GetNodeNeighbors(homeId, nodeId, node.m_neighbors);
+    if (nodeId != 1)
+    {
+        Manager::Get()->GetNodeNeighbors(homeId, nodeId, node.m_neighbors);
+    }
+    
     return node;
 
 }
@@ -228,11 +233,25 @@ NodeInfo* Five::createNode(Notification const* notification) {
 	string name = Manager::Get()->GetNodeProductName(homeId, nodeId);
 	string type = valueID.GetTypeAsString();
 
+
 	NodeInfo *n = new NodeInfo();
 	n->m_homeId		= homeId;
 	n->m_nodeId		= nodeId;
 	n->m_name     	= name;
 	n->m_nodeType 	= type;
+
+    cout << "createnode" << endl;
+    for (int i = 0; i < 29; i++) {
+		uint8 bite{ 0 };
+		uint8 *bitmapPixel = &bite;
+		n->m_neighbors[i] = bitmapPixel;
+	}
+
+    //if (nodeId != 1)
+    //{
+   
+    //}
+
 
 	return n;
 }
@@ -694,7 +713,7 @@ string Five::buildPhpMsg(string commandName, vector<string> args) {
         } else if (!UT_isValueIdExists(args[0], &valueID)) {
             status = StatusCode::INVALID_notFound;
             msg = Message::ValueNotFoundError;
-        } else {
+        } else{
             status = StatusCode::VALID_accepted;
             msg = Message::None;
             Manager::Get()->SetValue(valueID, args[1]);
@@ -709,7 +728,7 @@ string Five::buildPhpMsg(string commandName, vector<string> args) {
         Manager::Get()->RemoveNode(Five::homeID);
     } else if (commandName == COMMANDS[3].name) { // getNode
         if ((int)args.size() == 0) {
-            status = StatusCode::
+            status = StatusCode::INVALID_badRequest;
             body += "\"nodes\": [ ";
             for (auto it = nodes->begin(); it != nodes->end(); it++) {
                 if (it != nodes->begin()) {
@@ -1104,19 +1123,22 @@ string Five::nodeToJson(NodeInfo* node) {
         msg += valueIdToJson(*it);
     }
 
-    // msg += ", \"nodeNeighbors\": \"";
-    // for(int i = 0; i < 29; i++){
-    //     if (it != m_neighb.begin()) {
-    //         msg += ", ";
-    //     }
-    //    // msg += to_string(node->m_neighbors[i]);
-    // }
+    if(node->m_nodeId > 1){
+        msg += ", \"nodeNeighbors\": \"";
+        for(int i = 0; i < 29; ++i){
+            if (i != 0) {
+                msg += ", ";
+            }
+            msg += to_string(*(node->m_neighbors)[i]);
+        }
+    }
 
     msg += " ] }";
     return msg;
 }
 
 string Five::valueIdToJson(ValueID valueId) {
+    vector<string> prop;
     string msg = "";
     msg += "{ \"id\": \"";
     msg += to_string(valueId.GetId());
@@ -1139,7 +1161,7 @@ string Five::valueIdToJson(ValueID valueId) {
         }
     }
 
-    if (valType == ValueID::ValueType::ValueType_Bool) {
+    if (valType == ValueID::ValueType_Bool) {
         value[0] = tolower(value[0]);
     }
 
@@ -1154,6 +1176,19 @@ string Five::valueIdToJson(ValueID valueId) {
             msg += value;
             msg += "\"";
         }
+    }
+
+    if(valType == ValueID::ValueType_List){
+        msg += ", \"options\": [ \"";
+        Manager::Get()->GetValueListItems(valueId, &prop);
+        for(auto it = prop.begin(); it != prop.end(); it++){
+            if(it == prop.begin()){
+                msg += (*it) + "\"";
+            }else{
+                msg += ", \"" + (*it) + "\"";
+            }
+        }
+        msg += " ]";
     }
 
     msg += " }";
