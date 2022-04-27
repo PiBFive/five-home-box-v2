@@ -1514,14 +1514,48 @@ void Five::onNotification(Notification const* notification, void* context) {
 		}
 	}
 
-	if (notification->GetType() != Notification::Type_NodeRemoved) {
-		myfile.open(path, ios::app);
+	switch (LEVEL)
+	{
+	case logLevel::DEBUG:
+		if (notification->GetType() != Notification::Type_NodeRemoved)
+		{
+			myfile.open(path, ios::app);
 
-		myfile << "[" << getDate(convertDateTime(getCurrentDatetime())) << ", "<< getTime(convertDateTime(getCurrentDatetime())) << "] "
-			<< notifType << ", " << cc_name << " --> "
-			<< to_string(valueID.GetIndex()) << "(" << valueLabel << ")\n";
+			myfile << "[" << getDate(convertDateTime(getCurrentDatetime())) << ", " << getTime(convertDateTime(getCurrentDatetime())) << "] "
+				<< notifType << ", " << cc_name << " --> "
+				<< to_string(valueID.GetIndex()) << "(" << valueLabel << ")\n";
 
-		myfile.close();
+			myfile.close();
+		}
+		break;
+	case logLevel::INFO:
+		if (notification->GetType() == (Notification::Type_ValueAdded || Notification::Type_AllNodesQueried || Notification::Type_NodeAdded || Notification::Type_ValueChanged || Notification::Type_ValueRefreshed || Notification::Type_NodeQueriesComplete))
+		{
+			myfile.open(path, ios::app);
+
+			myfile << "[" << getDate(convertDateTime(getCurrentDatetime())) << ", " << getTime(convertDateTime(getCurrentDatetime())) << "] "
+				<< notifType << ", " << cc_name << " --> "
+				<< to_string(valueID.GetIndex()) << "(" << valueLabel << ")\n";
+
+			myfile.close();
+		}
+
+		break;
+	case logLevel::WARNING:
+		if (notification->GetType() == (Notification::Type_DriverFailed || Notification::))
+		{
+			myfile.open(path, ios::app);
+
+			myfile << "[" << getDate(convertDateTime(getCurrentDatetime())) << ", " << getTime(convertDateTime(getCurrentDatetime())) << "] "
+				<< notifType << ", " << cc_name << " --> "
+				<< to_string(valueID.GetIndex()) << "(" << valueLabel << ")\n";
+
+			myfile.close();
+		}
+		
+		break;
+	default:
+		break;
 	}
 
 	pthread_mutex_unlock(&g_criticalSection); // Unlock the critical section.
