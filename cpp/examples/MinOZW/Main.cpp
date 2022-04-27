@@ -38,9 +38,10 @@ void nodeSwitch(int stateInt, int *lock);
 void CheckFailedNode(string path);
 void statusObserver(list<NodeInfo *> *nodes);
 
-int main(int argc, char const *argv[])
-{
-	string response{"3"};
+int main(int argc, char const *argv[]) {
+	STARTED_AT = getCurrentDatetime().time_since_epoch().count();
+	
+	string response{ "3" };
 	cout << "Start process..." << endl;
 
 	// cout << ">>──── LOG LEVEL ────<<\n\n"
@@ -115,7 +116,24 @@ int main(int argc, char const *argv[])
 	Options::Get()->Lock();
 	Manager::Create();
 	Manager::Get()->AddWatcher(onNotification, NULL);
-	Manager::Get()->AddDriver(PORT);
+
+	cout << system("echo $PWD") << endl;
+	cout << system("rm cpp/examples/cache/.config") << endl;
+	const char *command = "ls -l /dev/ttyACM* | awk {'print($10)'} > cpp/examples/cache/.config";
+	cout << "command: " << command << endl;
+	cout << system(command) << endl;
+
+	fstream my_file;
+	my_file.open("cpp/examples/cache/.config");
+	if (my_file.is_open()) {
+		while(my_file.good()) {
+			my_file >> DRIVER_PATH;
+		}
+	}
+	my_file.close();
+
+
+	Manager::Get()->AddDriver(DRIVER_PATH);
 
 	thread t3(Five::statusObserver, Five::nodes);
 	t3.detach();
@@ -141,9 +159,9 @@ void onNotification(Notification const *notification, void *context)
 	ofstream myfile;
 	ValueID valueID{notification->GetValueID()};
 	string valueLabel;
-	uint8 cc_id{valueID.GetCommandClassId()};
-	string cc_name{Manager::Get()->GetCommandClassName(cc_id)};
-	string path = Five::NODE_LOG_PATH + "node_" + to_string(notification->GetNodeId()) + ".log";
+	uint8 cc_id{ valueID.GetCommandClassId() };
+	string cc_name{ Manager::Get()->GetCommandClassName(cc_id) };
+	string path = *NODE_LOG_PATH + "node_" + to_string(notification->GetNodeId()) + ".log";
 	string container;
 	string *ptr_container = &container;
 	string notifType{""};
@@ -329,14 +347,12 @@ void onNotification(Notification const *notification, void *context)
 	// cout << ">> " << notifType << endl;
 	// cout << log;
 
-	if (containsType(notification->GetType(), Five::AliveNotification) || notification->GetNodeId() == 1)
-	{
-		if ((containsType(notification->GetType(), Five::AliveNotification) || (nodes->size() == 1 && notification->GetType() == Notification::Type_AllNodesQueried)) && g_menuLocked)
-		{
-			thread t1(menu);
-			t1.detach();
-			g_menuLocked = false;
-		}
+	if (containsType(notification->GetType(), Five::AliveNotification) || notification->GetNodeId() == 1) {
+		// if ((containsType(notification->GetType(), Five::AliveNotification) || (nodes->size() == 1 && notification->GetType() == Notification::Type_AllNodesQueried)) && g_menuLocked) {
+		// 	thread t1(menu);
+		// 	t1.detach();
+		// 	g_menuLocked = false;
+		// }
 
 		if (containsNodeID(notification->GetNodeId(), (*Five::nodes)))
 		{

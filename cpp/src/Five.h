@@ -13,7 +13,6 @@ namespace Five {
     const int ZWAVE_PORT = 5101;
     const int PHP_PORT = 5100;
     const char *LOCAL_ADDRESS = "127.0.0.1";
-    const char *LAN_ADDRESS = "192.168.80.140"; //192.168.80.140
     
     struct NodeInfo {
         uint32             m_homeId;
@@ -99,12 +98,13 @@ namespace Five {
     Driver::ControllerState driverState;
 
     const list<string> TYPES{ "Color", "Switch", "Level", "Duration", "Volume", "Wake-up" };
-    const string CACHE_PATH{ "cpp/examples/cache/" };
-    const string NODE_LOG_PATH{ CACHE_PATH + "nodes/" };
-    const string FAILED_NODE_PATH{ CACHE_PATH + "failed_nodes.log" };
-    const string CPP_PATH{ "cpp/" };
-    const string CONFIG_PATH{ "config/" };
-    const string PORT{ "/dev/ttyACM0" };
+    const char *CACHE_PATH{ "cpp/examples/cache/" };
+    const char *NODE_LOG_PATH{ *CACHE_PATH + "nodes/" };
+    const char *FAILED_NODE_PATH{ *CACHE_PATH + "failed_nodes.log" };
+    const char *CPP_PATH{ "cpp/" };
+    const char *CONFIG_PATH{ "config/" };
+    const char *CONFIG_FILE_PATH{ *CACHE_PATH + ".config" };
+    string DRIVER_PATH;
     const int FAILED_NODE_INTERVAL{ 20 }; // Seconds
     const int NEIGHBOR_BITMAP_LENGTH{ 29 }; // Bits
     const int OBSERVER_PERIOD{ 50 }; // Milliseconds
@@ -117,10 +117,13 @@ namespace Five {
         Command{"exclude", {}, "Set the driver in exclusion mode."},
         Command{"getNode", {"id"}, "Get all node information."},
         Command{"reset", {"level"}, "Soft/Hard reset the driver."},
-        Command{"heal", {"[nodeId]"}, "Heal the node id if specified, otherwise heal the hole network."},
+        Command{"heal", {"(nodeIdd)"}, "Heal the node id if specified, otherwise heal the hole network."},
         Command{"isFailed", {"nodeId"}, "Check if the node is able to return a response."},
-        Command{"ping", {}, "Placeholder."},
+        Command{"ping", {}, "No description"},
         Command{"help", {}, "Command list documentation."},
+        Command{"brdcast", {}, "Pings every node to see how many respond"},
+        Command{"_restart", {}, "Restart the process with Bash."},
+        Command{"_reset", {}, "Remove log files, reset the ZWave driver and restart the process with Bash."},
     };
     
     const ValueID::ValueType NUMERIC_TYPES[] = {
@@ -231,6 +234,7 @@ namespace Five {
     
     void statusObserver(list<NodeInfo*> *nodes);
 
+    auto STARTED_AT = getCurrentDatetime().time_since_epoch().count();
 }
 
 #endif
