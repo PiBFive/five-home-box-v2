@@ -7,8 +7,11 @@
 #include <netinet/in.h>
 using namespace OpenZWave;
 
-
 namespace Five {
+
+    pthread_mutex_t g_criticalSection;
+    pthread_cond_t initCond = PTHREAD_COND_INITIALIZER;
+    pthread_mutex_t initMutex;
 
     const int ZWAVE_PORT = 5101;
     const int PHP_PORT = 5100;
@@ -98,12 +101,12 @@ namespace Five {
     Driver::ControllerState driverState;
 
     const list<string> TYPES{ "Color", "Switch", "Level", "Duration", "Volume", "Wake-up" };
-    const char *CACHE_PATH{ "cpp/examples/cache/" };
-    const char *NODE_LOG_PATH{ *CACHE_PATH + "nodes/" };
-    const char *FAILED_NODE_PATH{ *CACHE_PATH + "failed_nodes.log" };
-    const char *CPP_PATH{ "cpp/" };
-    const char *CONFIG_PATH{ "config/" };
-    const char *CONFIG_FILE_PATH{ *CACHE_PATH + ".config" };
+    const string CACHE_PATH{ "cpp/examples/cache/" };
+    const string NODE_LOG_PATH{ CACHE_PATH + "nodes/" };
+    const string FAILED_NODE_PATH{ CACHE_PATH + "failed_nodes.log" };
+    const string CPP_PATH{ "cpp/" };
+    const string CONFIG_PATH{ "config/" };
+    
     string DRIVER_PATH;
     const int FAILED_NODE_INTERVAL{ 20 }; // Seconds
     const int NEIGHBOR_BITMAP_LENGTH{ 29 }; // Bits
@@ -124,6 +127,7 @@ namespace Five {
         Command{"brdcast", {}, "Pings every node to see how many respond"},
         Command{"_restart", {}, "Restart the process with Bash."},
         Command{"_reset", {}, "Remove log files, reset the ZWave driver and restart the process with Bash."},
+        Command{"_setLvl", {"level"}, "[NONE, WARNING, INFO, DEBUG] Restart the ZWave driver with the selected level with Bash."},
     };
     
     const ValueID::ValueType NUMERIC_TYPES[] = {
@@ -150,6 +154,13 @@ namespace Five {
         "NOTIFICATION", "DRIVER_REMOVED", "CONTROLLER_COMMAND", "NODE_RESET",
         "USER_ALERTS", "MANUFACTURER_SPECIFIC_DB_READY"
     };
+
+    void CheckFailedNode(string path);
+    void nodeSwitch(int stateInt, int *lock);
+    void onNotification(Notification const* notification, void* context);
+    void watchState(uint32 homeID, int loopTimeOut);
+    void statusObserver(list<NodeInfo*> *nodes);
+    void menu();
 
     // JSON Serializer
 
@@ -232,9 +243,8 @@ namespace Five {
 
     // Driver
     
-    void statusObserver(list<NodeInfo*> *nodes);
 
-    auto STARTED_AT = getCurrentDatetime().time_since_epoch().count();
+    auto startedAt = getCurrentDatetime();
 }
 
 #endif
