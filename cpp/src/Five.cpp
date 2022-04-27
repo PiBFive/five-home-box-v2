@@ -1514,11 +1514,19 @@ void Five::onNotification(Notification const* notification, void* context) {
 		}
 	}
 
+	vector<Notification::NotificationType> _notifs = {
+		Notification::Type_ValueAdded,
+		Notification::Type_AllNodesQueried,
+		Notification::Type_NodeAdded,
+		Notification::Type_ValueChanged,
+		Notification::Type_ValueRefreshed,
+		Notification::Type_NodeQueriesComplete,
+	};
+
 	switch (LEVEL)
 	{
 	case logLevel::DEBUG:
-		if (notification->GetType() != Notification::Type_NodeRemoved)
-		{
+		if (notification->GetType() != Notification::Type_NodeRemoved) {
 			myfile.open(path, ios::app);
 
 			myfile << "[" << getDate(convertDateTime(getCurrentDatetime())) << ", " << getTime(convertDateTime(getCurrentDatetime())) << "] "
@@ -1529,8 +1537,7 @@ void Five::onNotification(Notification const* notification, void* context) {
 		}
 		break;
 	case logLevel::INFO:
-		if (notification->GetType() == (Notification::Type_ValueAdded || Notification::Type_AllNodesQueried || Notification::Type_NodeAdded || Notification::Type_ValueChanged || Notification::Type_ValueRefreshed || Notification::Type_NodeQueriesComplete))
-		{
+		if (containsType(notification->GetType(), _notifs)) {
 			myfile.open(path, ios::app);
 
 			myfile << "[" << getDate(convertDateTime(getCurrentDatetime())) << ", " << getTime(convertDateTime(getCurrentDatetime())) << "] "
@@ -1542,8 +1549,7 @@ void Five::onNotification(Notification const* notification, void* context) {
 
 		break;
 	case logLevel::WARNING:
-		if (notification->GetType() == (Notification::Type_DriverFailed || Notification::))
-		{
+		if (notification->GetType() == Notification::Type_DriverFailed) {
 			myfile.open(path, ios::app);
 
 			myfile << "[" << getDate(convertDateTime(getCurrentDatetime())) << ", " << getTime(convertDateTime(getCurrentDatetime())) << "] "
