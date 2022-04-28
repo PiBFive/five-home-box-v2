@@ -470,7 +470,6 @@ bool Five::nodeChoice(int* choice, list<NodeInfo*>::iterator it){
 //Prints the values of a node, and eventually asks for a choice (depending on bool value)
 bool Five::printValues(int* choice, list<NodeInfo*>::iterator* it, list<ValueID>::iterator it2, bool getOnly){
     string container;
-    string* ptr_container = &container;
     list<string>::const_iterator sIt;
     string response;
     int counterValue(0);
@@ -480,10 +479,10 @@ bool Five::printValues(int* choice, list<NodeInfo*>::iterator* it, list<ValueID>
                 cout << "\n>>────|VALUES OF THE NODE " << to_string((**it)->m_nodeId) << "|────<<\n\n"
                      << "[<nodeId>] <label>, <value>, <readOnly>\n\n";
                 for(it2 = (**it)->m_values.begin(); it2 != (**it)->m_values.end(); it2++) {
-                    Manager::Get()->GetValueAsString((*it2), ptr_container);
+                    Manager::Get()->GetValueAsString((*it2), &container);
                     cout << "[" << counterValue++ << "] "
                          << Manager::Get()->GetValueLabel(*it2) << ", "
-                         << *ptr_container << ", "
+                         <<  container << ", "
                          << Manager::Get()->IsValueReadOnly(*it2)
                          << "                          " << to_string(it2->GetId()) << endl;
                 }
@@ -518,7 +517,6 @@ bool Five::printValues(int* choice, list<NodeInfo*>::iterator* it, list<ValueID>
 bool Five::newSetValue(int* choice, list<NodeInfo*>::iterator* it, list<ValueID>::iterator it2, bool isOk){
     list<string>::const_iterator sIt;
     string container;
-    string* ptr_container = &container;
     string response;
     int listchoice(0);
     int counterValue(0);
@@ -555,8 +553,8 @@ bool Five::newSetValue(int* choice, list<NodeInfo*>::iterator* it, list<ValueID>
                 {
                     string valLabel = Manager::Get()->GetValueLabel(*it2);
                     cout << "You chose " << valLabel << endl;
-                    Manager::Get()->GetValueAsString((*it2), ptr_container);
-                    cout << "Current value: " << *ptr_container << endl;
+                    Manager::Get()->GetValueAsString((*it2), &container);
+                    cout << "Current value: " <<  container << endl;
                     // cout << "Set to what ? ";
                     //cin >> response;
 
@@ -1295,17 +1293,18 @@ void Five::statusObserver(list<NodeInfo*> *nodes) {
 
 void Five::onNotification(Notification const* notification, void* context) {
 	ofstream myfile;
-	ValueID valueID{ notification->GetValueID() };
 	string valueLabel;
-	uint8 cc_id{ valueID.GetCommandClassId() };
-	string cc_name{ Manager::Get()->GetCommandClassName(cc_id) };
+	ValueID valueID(notification->GetValueID());
+	uint8 cc_id = valueID.GetCommandClassId();
+	Notification::NotificationType nType(notification->GetType());
+	string cc_name = Manager::Get()->GetCommandClassName(cc_id);
 	string path = NODE_LOG_PATH + "node_" + to_string(notification->GetNodeId()) + ".log";
 	string container;
-	string *ptr_container = &container;
-	string notifType{ "" };
-	string log{ "" };
+	string notifType = "";
+	string log = "";
 
-	if (notification->GetType() == Notification::Type_ValueChanged) {
+
+	if (nType == Notification::Type_ValueChanged) {
 		string msg = buildNotifMsg(notification);
 
 		// thread ttemp(sendMsg, "0.0.0.0", PHP_PORT, msg);
@@ -1323,9 +1322,8 @@ void Five::onNotification(Notification const* notification, void* context) {
 
 	list<NodeInfo*>::iterator it;
 
-	switch (notification->GetType()) {
+	switch (nType) {
 		case Notification::Type_ValueAdded:
-			notifType = "VALUE ADDED";
 			log += "[VALUE_ADDED]	                  node " + to_string(notification->GetNodeId()) + ", value " + to_string(valueID.GetId()) + '\n';
 
 			for (it = nodes->begin(); it != nodes->end(); it++) {
@@ -1341,98 +1339,47 @@ void Five::onNotification(Notification const* notification, void* context) {
 			    + to_string(notification->GetNodeId()) + " value "
 				+ to_string(valueID.GetId()) + '\n';
 
-			notifType = "VALUE REMOVED";
 			removeValue(valueID);
 			break;
 		case Notification::Type_ValueChanged:
-			notifType = "VALUE CHANGED";
 
-			Manager::Get()->GetValueAsString(valueID, ptr_container);
+			Manager::Get()->GetValueAsString(valueID, &container);
 			Manager::Get()->GetNodeStatistics(valueID.GetHomeId(), valueID.GetNodeId(), ptr_nodeData);
 
 			log += "[VALUE_CHANGED]                   node "
 			    + to_string(valueID.GetNodeId()) + ", "
 				+ Manager::Get()->GetValueLabel(valueID) + ": "
-				+ *ptr_container + '\n';
+				+ container + '\n';
 
 			valueID = notification->GetValueID();
 			break;
 		case Notification::Type_ValueRefreshed:
-			notifType = "VALUE REFRESHED";
-			Manager::Get()->GetValueAsString(valueID, ptr_container);
+			Manager::Get()->GetValueAsString(valueID, &container);
 			log += "[VALUE_REFRESHED]                 node " + to_string(valueID.GetNodeId()) + ", "
-				+ Manager::Get()->GetValueLabel(valueID) + ": " + *ptr_container + "\n";
-			break;
-		case Notification::Type_Group:
-			notifType = "GROUP";
-			break;
-		case Notification::Type_NodeNew:
-			notifType = "NODE NEW";
+				+ Manager::Get()->GetValueLabel(valueID) + ": " +  container + "\n";
 			break;
 		case Notification::Type_NodeAdded:
 			log += "[NODE_ADDED]                      node " + to_string(notification->GetNodeId()) + '\n';
-			notifType = "NODE ADDED";
 
 			pushNode(notification, Five::nodes);
 			break;
 		case Notification::Type_NodeRemoved:
 			log += "[NODE_REMOVED]                    node " + to_string(notification->GetNodeId()) + '\n';
-			notifType = "NODE REMOVED";
 
 			removeFile(path);
 			removeNode(notification, Five::nodes);
 			break;
-		case Notification::Type_NodeProtocolInfo:
-			notifType = "NODE PROTOCOL INFO";
-			break;
 		case Notification::Type_NodeNaming:
 			log += "[NODE_NAMING]                     node " + to_string(valueID.GetNodeId()) + '\n';
-			notifType = "NODE NAMING";
-			break;
-		case Notification::Type_NodeEvent:
-			notifType = "NODE EVENT";
-			break;
-		case Notification::Type_PollingDisabled:
-			notifType = "POLLING DISABLED";
-			break;
-		case Notification::Type_PollingEnabled:
-			notifType = "POLLING ENABLED";
-			break;
-		case Notification::Type_SceneEvent:
-			notifType = "SCENE EVENT";
-			break;
-		case Notification::Type_CreateButton:
-			notifType = "CREATE BUTTON";
-			break;
-		case Notification::Type_DeleteButton:
-			notifType = "DELETE BUTTON";
-			break;
-		case Notification::Type_ButtonOn:
-			notifType = "BUTTON ON";
-			break;
-		case Notification::Type_ButtonOff:
-			notifType = "BUTTON OFF";
 			break;
 		case Notification::Type_DriverReady:
 			log += "[DRIVER_READY]                    driver READY\n" + getDriverData(notification->GetHomeId()) + '\n';
-			notifType = "DRIVER READY";
-			break;
-		case Notification::Type_DriverFailed:
-			notifType = "DRIVER FAILED";
-			break;
-		case Notification::Type_DriverReset:
-			notifType = "DRIVER RESET";
 			break;
 		case Notification::Type_EssentialNodeQueriesComplete:
 			log += "[ESSENTIAL_NODE_QUERIES_COMPLETE] node " + to_string(notification->GetNodeId()) + ", queries COMPLETE" + '\n';
-			notifType = "ESSENTIAL NODE QUERIES COMPLETE";
 			break;
 		case Notification::Type_NodeQueriesComplete:
 			log += "[NODE_QUERIES_COMPLETE]           node " + to_string(valueID.GetNodeId()) + '\n';
-			notifType = "NODE QUERIES COMPLETE";
-			break;
-		case Notification::Type_AwakeNodesQueried:
-			notifType = "AWAKE NODES QUERIED";
 			break;
 		case Notification::Type_AllNodesQueriedSomeDead:
 			log += "\n🚨 [ALL_NODES_QUERIED_SOME_DEAD]  node " + to_string(valueID.GetNodeId()) + '\n'
@@ -1441,7 +1388,6 @@ void Five::onNotification(Notification const* notification, void* context) {
 			     + "   - dead : " + to_string(deadNodeSum(nodes)) + '\n'
 			     + "   - start: " + getTime(convertDateTime(startedAt))
 			     + "   - elapse: " + to_string(difference(getCurrentDatetime(), startedAt)) + "s\n" + '\n';
-			notifType = "ALL NODES QUERIED SOME DEAD";
 			break;
 		case Notification::Type_AllNodesQueried:
 			log += "\n✅ [ALL_NODES_QUERIED]            node " + to_string(valueID.GetNodeId()) + '\n'
@@ -1450,50 +1396,20 @@ void Five::onNotification(Notification const* notification, void* context) {
 			     + "   - dead : " + to_string(deadNodeSum(nodes)) + '\n'
 			     + "   - start: " + getTime(convertDateTime(startedAt))
 			     + "   - elapse: " + to_string(difference(getCurrentDatetime(), startedAt)) + "s\n" + '\n';
-			notifType = "ALL NODES QUERIED";
-			break;
-		case Notification::Type_Notification:
-			notifType = "NOTIFICATION";
-			break;
-		case Notification::Type_DriverRemoved:
-			notifType = "DRIVER REMOVED";
-			break;
-		case Notification::Type_ControllerCommand:
-			notifType = "CONTROLLER COMMAND";
-			break;
-		case Notification::Type_NodeReset:
-			notifType = "NODE RESET";
-			break;
-		case Notification::Type_UserAlerts:
-			notifType = "USER ALERTS";
 			break;
 		case Notification::Type_ManufacturerSpecificDBReady:
-			// The valueID is empty, you can't use it here.
 			log += "[MANUFACTURER_SPECIFIC_DB_READY]  manufacturer database READY" + '\n';
-			notifType = "MANUFACTURER SPECIFIC DB READY";
 			break;
 		default:
 			break;
 	}
 
 	if (notifType == "") {
-		notifType = to_string(notification->GetType());
+		notifType = to_string(nType);
 	}
 
-	switch (Five::LEVEL)
-	{
-	case Five::logLevel::DEBUG:
-		cout << log;
-		break;
-	default:
-		break;
-	}
-
-	// cout << ">> " << notifType << endl;
-	// cout << log;
-
-	if (containsType(notification->GetType(), Five::AliveNotification) || notification->GetNodeId() == 1) {
-		// if ((containsType(notification->GetType(), Five::AliveNotification) || (nodes->size() == 1 && notification->GetType() == Notification::Type_AllNodesQueried)) && g_menuLocked) {
+	if (containsType(nType, Five::AliveNotification) || notification->GetNodeId() == 1) {
+		// if ((containsType(nType, Five::AliveNotification) || (nodes->size() == 1 && nType == Notification::Type_AllNodesQueried)) && g_menuLocked) {
 		// 	thread t1(menu);
 		// 	t1.detach();
 		// 	g_menuLocked = false;
@@ -1503,12 +1419,12 @@ void Five::onNotification(Notification const* notification, void* context) {
 			NodeInfo* n = getNode(notification->GetNodeId(), Five::nodes);
 			if (n->m_isDead) {
 				n->m_isDead = false;
-				if (LEVEL != logLevel::NONE && n->m_nodeId != 1) {
-					cout << "\n\n⭐ [NEW_NODE_APPEARS]             node " << to_string(valueID.GetNodeId()) << endl;
-					cout << "   - total: " << aliveNodeSum(nodes) + deadNodeSum(nodes) << endl;
-					cout << "   - alive: " << aliveNodeSum(nodes) << endl;
-					cout << "   - dead : " << deadNodeSum(nodes) << "\n\n" << endl;
-				}
+				// if (LEVEL != logLevel::NONE && n->m_nodeId != 1) {
+				// 	cout << "\n\n⭐ [NEW_NODE_APPEARS]             node " << to_string(valueID.GetNodeId()) << endl;
+				// 	cout << "   - total: " << aliveNodeSum(nodes) + deadNodeSum(nodes) << endl;
+				// 	cout << "   - alive: " << aliveNodeSum(nodes) << endl;
+				// 	cout << "   - dead : " << deadNodeSum(nodes) << "\n\n" << endl;
+				// }
 			}
 			n->m_sync = chrono::high_resolution_clock::now();
 		}
@@ -1523,46 +1439,33 @@ void Five::onNotification(Notification const* notification, void* context) {
 		Notification::Type_NodeQueriesComplete,
 	};
 
-	switch (LEVEL)
-	{
-	case logLevel::DEBUG:
-		if (notification->GetType() != Notification::Type_NodeRemoved) {
-			myfile.open(path, ios::app);
+	myfile.open(path, ios::app);
 
+	switch (LEVEL) {
+		case logLevel::DEBUG:
 			myfile << "[" << getDate(convertDateTime(getCurrentDatetime())) << ", " << getTime(convertDateTime(getCurrentDatetime())) << "] "
-				<< notifType << ", " << cc_name << " --> "
-				<< to_string(valueID.GetIndex()) << "(" << valueLabel << ")\n";
-
-			myfile.close();
-		}
-		break;
-	case logLevel::INFO:
-		if (containsType(notification->GetType(), _notifs)) {
-			myfile.open(path, ios::app);
-
-			myfile << "[" << getDate(convertDateTime(getCurrentDatetime())) << ", " << getTime(convertDateTime(getCurrentDatetime())) << "] "
-				<< notifType << ", " << cc_name << " --> "
-				<< to_string(valueID.GetIndex()) << "(" << valueLabel << ")\n";
-
-			myfile.close();
-		}
-
-		break;
-	case logLevel::WARNING:
-		if (notification->GetType() == Notification::Type_DriverFailed) {
-			myfile.open(path, ios::app);
-
-			myfile << "[" << getDate(convertDateTime(getCurrentDatetime())) << ", " << getTime(convertDateTime(getCurrentDatetime())) << "] "
-				<< notifType << ", " << cc_name << " --> "
-				<< to_string(valueID.GetIndex()) << "(" << valueLabel << ")\n";
-
-			myfile.close();
-		}
-		
-		break;
-	default:
-		break;
+					<< NOTIFICATIONS[nType] << ", " << cc_name << " --> "
+					<< to_string(valueID.GetIndex()) << "(" << valueLabel << ")\n";
+			break;
+		case logLevel::INFO:
+			if (containsType(nType, _notifs)) {
+				myfile << "[" << getDate(convertDateTime(getCurrentDatetime())) << ", " << getTime(convertDateTime(getCurrentDatetime())) << "] "
+					   << NOTIFICATIONS[nType] << ", " << cc_name << " --> "
+					   << to_string(valueID.GetIndex()) << "(" << valueLabel << ")\n";
+			}
+			break;
+		case logLevel::WARNING:
+			if (nType == Notification::Type_DriverFailed) {
+				myfile << "[" << getDate(convertDateTime(getCurrentDatetime())) << ", " << getTime(convertDateTime(getCurrentDatetime())) << "] "
+					   << NOTIFICATIONS[nType] << ", " << cc_name << " --> "
+					   << to_string(valueID.GetIndex()) << "(" << valueLabel << ")\n";
+			}			
+			break;
+		default:
+			break;
 	}
+
+	myfile.close();
 
 	pthread_mutex_unlock(&g_criticalSection); // Unlock the critical section.
 }
@@ -1624,7 +1527,6 @@ void menu() {
 		list<NodeInfo *>::iterator it;
 		list<ValueID>::iterator it2;
 		string container;
-		string *ptr_container = &container;
 		string fileName{""};
 
 		// while (x --> 0) {
@@ -2125,8 +2027,8 @@ void menu() {
 
 					for (it2 = (*it)->m_values.begin(); it2 != (*it)->m_values.end(); it2++)
 					{
-						// Manager::Get()->GetValueAsString(*valueIt, ptr_container);
-						// cout << Manager::Get()->GetValueLabel(*valueIt) << ": " << *ptr_container << endl;
+						// Manager::Get()->GetValueAsString(*valueIt, &ptr_container);
+						// cout << Manager::Get()->GetValueLabel(*valueIt) << ": " <<  &ptr_container << endl;
 						if (!Manager::Get()->IsValueReadOnly(*it2))
 						{
 							counterValue++;
@@ -2137,8 +2039,8 @@ void menu() {
 
 							// Printing the current value
 							cout << Manager::Get()->GetValueLabel(*it2) << it2->GetAsString() << endl;
-							Manager::Get()->GetValueAsString((*it2), ptr_container);
-							cout << "Current value: " << *ptr_container << endl;
+							Manager::Get()->GetValueAsString((*it2), &container);
+							cout << "Current value: " <<  container << endl;
 
 							// Asking the user to set the wanted value
 							cout << "Set to what ? ";
@@ -2149,7 +2051,7 @@ void menu() {
 							// setUnit((*valueIt));
 
 							// Sending the value until current value is identical, or until timeout (for sleeping nodes)
-							while (response != *ptr_container && tempCounter-- > 0)
+							while (response != container && tempCounter-- > 0)
 							{
 								// if (response.find('.')) {
 								// 	float temp = stof(response);
@@ -2158,9 +2060,9 @@ void menu() {
 								// }
 
 								Manager::Get()->SetValue((*it2), response);
-								Manager::Get()->GetValueAsString((*it2), ptr_container);
+								Manager::Get()->GetValueAsString((*it2), &container);
 								this_thread::sleep_for(chrono::milliseconds(100));
-								cout << "send " << response << ", " << *ptr_container << "\n";
+								cout << "send " << response << ", " <<  container << "\n";
 							}
 
 							// Manager::Get()->GetValueAsInt((*valueIt), testptr);
@@ -2181,8 +2083,8 @@ void menu() {
 			// 	counterValue++;
 			// 	if (counterValue == choice)
 			// 		{
-			// 			Manager::Get()->GetValueAsString(*valueIt, ptr_container);
-			// 			cout << "The current value is: " << ptr_container << endl;
+			// 			Manager::Get()->GetValueAsString(*valueIt, &ptr_container);
+			// 			cout << "The current value is: " << &ptr_container << endl;
 			// 			cout << "Enter the new value: " << endl;
 			// 			cin >> response;
 			// 			Manager::Get()->SetValue(*valueIt, response);
