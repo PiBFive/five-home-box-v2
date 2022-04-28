@@ -733,16 +733,24 @@ string Five::buildPhpMsg(string commandName, vector<string> args) {
     body += "], \"body\": { ";
 
     if (commandName == COMMANDS[0].name) { // setValue
-        if (args.size() != 2) {
+        if ((int)args.size() < 2) {
             status = StatusCode::INVALID_badRequest;
             msg = Message::ArgumentError;
-        } else if (!UT_isDigit(args[0])) {
+		} else if (!UT_isDigit(args[0])) {
             status = StatusCode::INVALID_badRequest;
             msg = Message::InvalidArgument;
         } else if (!UT_isValueIdExists(args[0], &valueID)) {
             status = StatusCode::INVALID_notFound;
             msg = Message::ValueNotFoundError;
-        } else{
+        } else if((int)args.size() > 2){
+			cout << "test" << endl;
+			status = StatusCode::VALID_accepted;
+            msg = Message::None;
+			for(int i = 2; i < (int)args.size(); i++ ){
+				args[1] += " " + args[i];
+			}
+			Manager::Get()->SetValue(valueID, args[1]);
+		} else{
             status = StatusCode::VALID_accepted;
             msg = Message::None;
             Manager::Get()->SetValue(valueID, args[1]);
@@ -977,12 +985,20 @@ string Five::buildPhpMsg(string commandName, vector<string> args) {
 			if(containsStatus(status, validCode)){
 				socketFile.open(infoPath, ios::app);
 				socketFile << "[" << getDate(convertDateTime(getCurrentDatetime())) << ", " << getTime(convertDateTime(getCurrentDatetime())) << "] " << "\"status\": " 
-				<< to_string(status) << ", \"message\": \"" << messages[msg] << "\", " << commandName << endl;
+				<< to_string(status) << ", \"message\": \"" << messages[msg] << "\", " << commandName;
+				for(int i = 0; i < (int)args.size(); i++){
+					socketFile << "," << args[i];
+				}
+				socketFile << endl;
 				socketFile.close();
 			} else if(containsStatus(status, invalidCode)){
 				socketFile.open(errorPath, ios::app);
 				socketFile << "[" << getDate(convertDateTime(getCurrentDatetime())) << ", " << getTime(convertDateTime(getCurrentDatetime())) << "] " << "\"status\": " 
-				<< to_string(status) << ", \"message\": \"" << messages[msg] << "\", " << commandName << endl;
+				<< to_string(status) << ", \"message\": \"" << messages[msg] << "\", " << commandName;
+				for(int i = 0; i < (int)args.size(); i++){
+					socketFile << "," << args[i];
+				}
+				socketFile << endl;
 				socketFile.close();
 			}
             break;
@@ -990,7 +1006,11 @@ string Five::buildPhpMsg(string commandName, vector<string> args) {
 			if(containsStatus(status, validCode)){
 				socketFile.open(infoPath, ios::app);
 				socketFile << "[" << getDate(convertDateTime(getCurrentDatetime())) << ", " << getTime(convertDateTime(getCurrentDatetime())) << "] " << "\"status\": " 
-				<< to_string(status) << ", \"message\": \"" << messages[msg] << "\", " << commandName << endl;
+				<< to_string(status) << ", \"message\": \"" << messages[msg] << "\", " << commandName;
+				for(int i = 0; i < (int)args.size(); i++){
+					socketFile << "," << args[i];
+				}
+				socketFile << endl;
 				socketFile.close();
 			}
             break;
@@ -998,7 +1018,11 @@ string Five::buildPhpMsg(string commandName, vector<string> args) {
 			if(containsStatus(status, invalidCode)){
 				socketFile.open(errorPath, ios::app);
 				socketFile << "[" << getDate(convertDateTime(getCurrentDatetime())) << ", " << getTime(convertDateTime(getCurrentDatetime())) << "] " << "\"status\": " 
-				<< to_string(status) << ", \"message\": \"" << messages[msg] << "\", " << commandName << endl;
+				<< to_string(status) << ", \"message\": \"" << messages[msg] << "\", " << commandName;
+				for(int i = 0; i < (int)args.size(); i++){
+					socketFile << "," << args[i];
+				}
+				socketFile << endl;
 				socketFile.close();
 			}
             break;
@@ -1173,14 +1197,14 @@ string Five::nodeToJson(NodeInfo* node) {
     }
 
     if(node->m_nodeId > 1){
-        msg += ", \"nodeNeighbors\": \"";
-        for(int i = 0; i < 29; ++i){
-            if (i != 0) {
-                msg += ", ";
-            }
-            msg += to_string(*(node->m_neighbors)[i]);
-        }
-    }
+         msg += ", \"nodeNeighbors\": \"";
+         for(int i = 0; i < 29; ++i){
+             if (i != 0) {
+                 msg += ", ";
+             }
+             msg += to_string(*(node->m_neighbors)[i]);
+         }
+     }
 
     msg += " ] }";
     return msg;
@@ -1406,8 +1430,6 @@ void Five::onNotification(Notification const* notification, void* context) {
 
 			valueID = notification->GetValueID();
 
-			node = getNode(valueID.GetNodeId(), nodes);
-			Manager::Get()->GetNodeNeighbors(homeID, valueID.GetNodeId(), node->m_neighbors);
 			break;
 		case Notification::Type_ValueRefreshed:
 			Manager::Get()->GetValueAsString(valueID, &container);
@@ -1436,6 +1458,9 @@ void Five::onNotification(Notification const* notification, void* context) {
 			break;
 		case Notification::Type_NodeQueriesComplete:
 			log += "[NODE_QUERIES_COMPLETE]           node " + to_string(valueID.GetNodeId()) + '\n';
+
+			node = getNode(valueID.GetNodeId(), nodes);
+			Manager::Get()->GetNodeNeighbors(homeID, valueID.GetNodeId(), node->m_neighbors);
 			break;
 		case Notification::Type_AllNodesQueriedSomeDead:
 			log += "\n🚨 [ALL_NODES_QUERIED_SOME_DEAD]  node " + to_string(valueID.GetNodeId()) + '\n'
