@@ -280,6 +280,16 @@ bool Five::containsType(Notification::NotificationType needle, vector<Notificati
     return false;
 }
 
+//Check if status <needle> is in list <haystack>
+bool Five::containsStatus(StatusCode needle, vector<StatusCode> haystack) {
+    for (int i = 0; i < int(haystack.capacity()); i++) {
+        if (needle == haystack[i]) {
+            return true;
+        }
+    }
+    return false;
+}
+
 //Check if node <needle> is in list <haystack>
 bool Five::containsNodeID(uint8 needle, list<NodeInfo*> haystack) {
     list<NodeInfo*>::iterator it;
@@ -414,7 +424,7 @@ string Five::getTime(tm* datetime) {
 
 //Returns only the date
 string Five::getDate(tm* datetime) {
-    return to_string(datetime->tm_year) + "-" + to_string(datetime->tm_mon) + "-" + to_string(datetime->tm_mday);
+    return to_string(datetime->tm_year + 1900) + "-" + to_string(datetime->tm_mon + 1) + "-" + to_string(datetime->tm_mday);
 }
 
 //Returns the elapsed time between two date/time
@@ -684,12 +694,16 @@ bool Five::UT_isNodeIdExists(string id) {
 
 // Build the message to php client in a json format.
 string Five::buildPhpMsg(string commandName, vector<string> args) {
+    fstream socketFile;
+    string errorPath = SOCKET_LOG_PATH + "errors.log";
+    string infoPath = SOCKET_LOG_PATH + "info.log";
+    vector<StatusCode> validCode = {VALID_ok, VALID_created, VALID_accepted, VALID_noContent};
+    vector<StatusCode> invalidCode = {INVALID_badRequest, INVALID_forbidden, INVALID_imATeapot, INVALID_methodNotAllowed, INVALID_notAcceptable, INVALID_notFound, INVALID_requestTimeout, INVALID_unauthorized, SERVER_bandWidthLimitExceeded, SERVER_notImplemented, SERVER_unavailable};
     Message msg = Message::InvalidCommand;
     StatusCode status = StatusCode::INVALID_badRequest;
     ValueID valueID;
     
     auto awakeTime = (getCurrentDatetime().time_since_epoch().count() - startedAt.time_since_epoch().count()) / 1000000000;
-
     string body = "";
     body += "\"upTime\": " + to_string(awakeTime) + ", ";
     body += "\"commandName\": \"" + commandName + "\", ";
@@ -706,16 +720,24 @@ string Five::buildPhpMsg(string commandName, vector<string> args) {
     body += "], \"body\": { ";
 
     if (commandName == COMMANDS[0].name) { // setValue
-        if (args.size() != 2) {
+        if ((int)args.size() < 2) {
             status = StatusCode::INVALID_badRequest;
             msg = Message::ArgumentError;
-        } else if (!UT_isDigit(args[0])) {
+		} else if (!UT_isDigit(args[0])) {
             status = StatusCode::INVALID_badRequest;
             msg = Message::InvalidArgument;
         } else if (!UT_isValueIdExists(args[0], &valueID)) {
             status = StatusCode::INVALID_notFound;
             msg = Message::ValueNotFoundError;
-        } else{
+        } else if((int)args.size() > 2){
+			cout << "test" << endl;
+			status = StatusCode::VALID_accepted;
+            msg = Message::None;
+			for(int i = 2; i < (int)args.size(); i++ ){
+				args[1] += " " + args[i];
+			}
+			Manager::Get()->SetValue(valueID, args[1]);
+		} else{
             status = StatusCode::VALID_accepted;
             msg = Message::None;
             Manager::Get()->SetValue(valueID, args[1]);
@@ -938,11 +960,62 @@ string Five::buildPhpMsg(string commandName, vector<string> args) {
         cout << system("./cpp/examples/bash/reset_key.sh") << endl;
     }
 
+    
     body += "\"status\": " + to_string(status);
     body += ", \"message\": \"" + messages[msg] + "\" } }";
 
     int body_length = body.length();
     body = "{ \"messageLength\": " + to_string(body_length + to_string(body_length).length()) + ", " + body;
+
+    switch(LEVEL){
+        case logLevel::DEBUG:
+			if(containsStatus(status, validCode)){
+				socketFile.open(infoPath, ios::app);
+				socketFile << "[" << getDate(convertDateTime(getCurrentDatetime())) << ", " << getTime(convertDateTime(getCurrentDatetime())) << "] " << "\"status\": " 
+				<< to_string(status) << ", \"message\": \"" << messages[msg] << "\", " << commandName;
+				for(int i = 0; i < (int)args.size(); i++){
+					socketFile << "," << args[i];
+				}
+				socketFile << endl;
+				socketFile.close();
+			} else if(containsStatus(status, invalidCode)){
+				socketFile.open(errorPath, ios::app);
+				socketFile << "[" << getDate(convertDateTime(getCurrentDatetime())) << ", " << getTime(convertDateTime(getCurrentDatetime())) << "] " << "\"status\": " 
+				<< to_string(status) << ", \"message\": \"" << messages[msg] << "\", " << commandName;
+				for(int i = 0; i < (int)args.size(); i++){
+					socketFile << "," << args[i];
+				}
+				socketFile << endl;
+				socketFile.close();
+			}
+            break;
+        case logLevel::INFO:
+			if(containsStatus(status, validCode)){
+				socketFile.open(infoPath, ios::app);
+				socketFile << "[" << getDate(convertDateTime(getCurrentDatetime())) << ", " << getTime(convertDateTime(getCurrentDatetime())) << "] " << "\"status\": " 
+				<< to_string(status) << ", \"message\": \"" << messages[msg] << "\", " << commandName;
+				for(int i = 0; i < (int)args.size(); i++){
+					socketFile << "," << args[i];
+				}
+				socketFile << endl;
+				socketFile.close();
+			}
+            break;
+        case logLevel::WARNING:
+			if(containsStatus(status, invalidCode)){
+				socketFile.open(errorPath, ios::app);
+				socketFile << "[" << getDate(convertDateTime(getCurrentDatetime())) << ", " << getTime(convertDateTime(getCurrentDatetime())) << "] " << "\"status\": " 
+				<< to_string(status) << ", \"message\": \"" << messages[msg] << "\", " << commandName;
+				for(int i = 0; i < (int)args.size(); i++){
+					socketFile << "," << args[i];
+				}
+				socketFile << endl;
+				socketFile.close();
+			}
+            break;
+        default:
+            break;
+    }
 
     return body;
 }
@@ -1109,14 +1182,14 @@ string Five::nodeToJson(NodeInfo* node) {
     }
 
     if(node->m_nodeId > 1){
-        msg += ", \"nodeNeighbors\": \"";
-        for(int i = 0; i < 29; ++i){
-            if (i != 0) {
-                msg += ", ";
-            }
-            msg += to_string(*(node->m_neighbors)[i]);
-        }
-    }
+         msg += ", \"nodeNeighbors\": \"";
+         for(int i = 0; i < 29; ++i){
+             if (i != 0) {
+                 msg += ", ";
+             }
+             msg += to_string(*(node->m_neighbors)[i]);
+         }
+     }
 
     msg += " ] }";
     return msg;
@@ -1281,6 +1354,7 @@ void Five::statusObserver(list<NodeInfo*> *nodes) {
 
 void Five::onNotification(Notification const* notification, void* context) {
 	ofstream myfile;
+	NodeInfo* node;
 	string valueLabel;
 	ValueID valueID(notification->GetValueID());
 	uint8 cc_id = valueID.GetCommandClassId();
@@ -1340,6 +1414,7 @@ void Five::onNotification(Notification const* notification, void* context) {
 				+ container + '\n';
 
 			valueID = notification->GetValueID();
+
 			break;
 		case Notification::Type_ValueRefreshed:
 			Manager::Get()->GetValueAsString(valueID, &container);
@@ -1368,6 +1443,9 @@ void Five::onNotification(Notification const* notification, void* context) {
 			break;
 		case Notification::Type_NodeQueriesComplete:
 			log += "[NODE_QUERIES_COMPLETE]           node " + to_string(valueID.GetNodeId()) + '\n';
+
+			node = getNode(valueID.GetNodeId(), nodes);
+			Manager::Get()->GetNodeNeighbors(homeID, valueID.GetNodeId(), node->m_neighbors);
 			break;
 		case Notification::Type_AllNodesQueriedSomeDead:
 			log += "\n🚨 [ALL_NODES_QUERIED_SOME_DEAD]  node " + to_string(valueID.GetNodeId()) + '\n'
