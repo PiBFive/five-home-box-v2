@@ -4,7 +4,6 @@
 #include "Driver.h"
 #include <thread>
 #include <fstream>
-
 #include "Five.h"
 
 using namespace OpenZWave;
