@@ -108,6 +108,8 @@ namespace Five {
     const string CONFIG_PATH{ "config/" };
     
     string DRIVER_PATH;
+    bool menuLocked = true;
+
     const int FAILED_NODE_INTERVAL{ 20 }; // Seconds
     const int NEIGHBOR_BITMAP_LENGTH{ 29 }; // Bits
     const int OBSERVER_PERIOD{ 50 }; // Milliseconds
@@ -157,10 +159,10 @@ namespace Five {
 
     void CheckFailedNode(string path);
     void nodeSwitch(int stateInt, int *lock);
+    void menu();
     void onNotification(Notification const* notification, void* context);
     void watchState(uint32 homeID, int loopTimeOut);
     void statusObserver(list<NodeInfo*> *nodes);
-    void menu();
 
     // JSON Serializer
 
@@ -170,11 +172,11 @@ namespace Five {
     // Config method
     
     bool setSwitch(ValueID valueID, bool state);
-    bool setIntensity(ValueID valueID, IntensityScale intensity);
-    bool setColor(ValueID valueID);
+    bool setIntensity(ValueID valueID, int intensity);
+    bool setHexColor(ValueID valueID, string hexColor);
     bool setList(ValueID valueID);
-    bool setVolume(ValueID valueID, IntensityScale intensity);
-    bool setDuration(ValueID valueID);
+    bool setVolume(ValueID valueID, int intensity);
+    bool setDuration(ValueID valueID, int duration);
     bool setInt(ValueID valueId);
     bool setBool(ValueID valueId);
     bool setButton(ValueID valueId);
@@ -241,8 +243,11 @@ namespace Five {
     
     string buildPhpMsg(string commandName, vector<string> args);
 
-    // Driver
-    
+    // Unit Tests
+
+    bool UT_isDigit(string arg);
+    bool UT_isValueIdExists(string id, ValueID* ptr_valueID);
+    bool UT_isNodeIdExists(string id);
 
     auto startedAt = getCurrentDatetime();
 }

@@ -17,15 +17,14 @@
 #include <thread>
 #include <fstream>
 #include <vector>
+#include <regex>
 
-#include "../../nlohmann/single_include/nlohmann/json.hpp"
 
 #define PORT 5101
 
 using namespace OpenZWave;
 using namespace Five;
 using namespace std;
-using namespace nlohmann;
 
 //Returns the node object whose ID you've given
 NodeInfo* Five::getNode(uint8 nodeID, list<NodeInfo*> *nodes) {
@@ -71,52 +70,28 @@ NodeInfo Five::getNodeConfig(uint32 homeId, uint8 nodeId, list<NodeInfo*> *nodes
 
 }
 
-/// A value has changed on the Z-Wave network and this is a different value.
+// A value has changed on the Z-Wave network and this is a different value.
 bool Five::valueChanged(Notification const* notification, list<NodeInfo*> *nodes) {
-    bool state;
-    bool* ptr = &state;
+    ValueID valueId = notification->GetValueID();
 
-    ValueID v{ notification->GetValueID() };
-    string output{ "[VALUE CHANGED]\n" };
-    list<NodeInfo*>::iterator it;
-
-    for (it = nodes->begin(); it != nodes->end(); it++) {
-        if ((*it)->m_nodeId == v.GetNodeId()) {
-            (*it)->m_values.push_back(v);
+    for (auto it = nodes->begin(); it != nodes->end(); it++) {
+        if ((*it)->m_nodeId == valueId.GetNodeId()) {
+            (*it)->m_values.push_back(valueId);
         }
     }
 
-    output += "id           : " + int(v.GetId()) + '\n';
-    output += "index        : " + int(v.GetIndex()) + '\n';
-    output += "type         : " + v.GetTypeAsString() + '\n';
-    output += "node_id      : " + int(v.GetNodeId()) + '\n';
-    output += "node_name    : " + Manager::Get()->GetNodeProductName(v.GetHomeId(), v.GetNodeId()) + '\n';
-    output += "node_type    : " + int(Manager::Get()->GetNodeDeviceType(v.GetHomeId(), v.GetNodeId())) + '\n';
-    output += "node_stage   : " + Manager::Get()->GetNodeQueryStage(v.GetHomeId(), v.GetNodeId()) + '\n';
-    output += "node_version : " + int(Manager::Get()->GetNodeVersion(v.GetHomeId(), v.GetNodeId())) + '\n';
-    output += "node_specific: " + Manager::Get()->GetNodeSpecificString(v.GetHomeId(), v.GetNodeId()) + '\n';
-    output += "node_label   : " + Node(v.GetHomeId(), v.GetNodeId()).GetInstanceLabel(v.GetCommandClassId(), v.GetInstance()) + '\n';
-    output += "cc_id        : " + int(v.GetCommandClassId()) + '\n';
-    output += "name         : " + Manager::Get()->GetCommandClassName(v.GetCommandClassId()) + '\n';
-
-    if (v.GetType() == ValueID::ValueType_Bool) {
-        Manager::Get()->GetValueAsBool(v, ptr);
-        output += "value_as_bool: " + *ptr + '\n';
-    }
-
-    // return output;
     return true;
 }
 
-//Allows to turn on or off any object who has a switch parameter
+// Allows to turn on or off any object who has a switch parameter.
 bool Five::setSwitch(ValueID valueId, bool state) {   
     string answer;
     cout << "true(1) or false(0) ?" << endl;
 	cin >> answer;
 
-    if(answer=="true" || answer=="True" || answer == "1"){
+    if (answer=="true" || answer=="True" || answer == "1") {
         state = true;
-    }else if(answer == "false" || answer == "False" || answer == "0"){
+    } else if (answer == "false" || answer == "False" || answer == "0") {
         state = false;
     }
 
@@ -124,99 +99,117 @@ bool Five::setSwitch(ValueID valueId, bool state) {
     return true;
 }
 
-
-//Allows to set the value of an intensity type value
-bool Five::setIntensity(ValueID valueId, IntensityScale intensity) {
+// Allows to set the value of an intensity type value.
+bool Five::setIntensity(ValueID valueId, int intensity) {
     Manager::Get()->SetValue(valueId, to_string(intensity));
     return true;
 }
 
-//Allows to change the color of a light by giving an hexadecimal value
-bool Five::setColor(ValueID valueId)
-{
-    cout << "Enter hexadecimal color" << endl;
-    string hexColor;
-    cin >> hexColor;
-    Manager::Get()->SetValue(valueId, hexColor);
-    return true;
+// Allows to change the color of a light by giving an hexadecimal value.
+bool Five::setHexColor(ValueID valueId, string hexColor) {
+
+	if (regex_match(hexColor, regex("^#[0-9a-zA-Z]{10}$"))) {
+		Manager::Get()->SetValue(valueId, hexColor);
+		return true;
+	}
+
+	return false;
 }
 
-//Allows to change the value of a list type value by displaying all possible values
-bool Five::setList(ValueID valueId){
+// Allows to change the value of a list type value by displaying all possible values.
+bool Five::setList(ValueID valueId) {
     vector<string> vectS;
-    vector<string> *vectSPtr = &vectS;
-    int counter{0};
-    string s;
-    string* ptr = &s;
-    cout << valueId.GetTypeAsString() << endl;
-    Manager::Get()->GetValueListItems(valueId, vectSPtr) ;
-    vector<string>::iterator it;
-    int choice;
     string response;
-    Manager::Get()->GetValueListSelection(valueId, ptr);
-    cout << "Current Value: " << s << endl;
-    for(it = vectS.begin(); it != vectS.end(); ++it){
-        counter++;
-        cout << counter << ". " << (*it) << endl;
+    string s;
+
+    int counter = 0;
+    
+	Manager::Get()->GetValueListItems(valueId, &vectS) ;
+    Manager::Get()->GetValueListSelection(valueId, &s);
+    
+	cout << "Current Value: " << s << endl;
+    
+	for(auto it = vectS.begin(); it != vectS.end(); ++it){
+        cout << "[" << ++counter << "] " << *it << endl;
     }
-    cout << "Choose your poison" << endl;
-    cin >> response;
-    choice = stoi(response);
-    cout << choice << endl;
-    counter = 0;
-    for(it = vectS.begin(); it != vectS.end(); ++it){
+	
+	counter = 0;
+	cout << "Select: " << endl;
+	cin >> response;
+
+    for(auto it = vectS.begin(); it != vectS.end(); ++it){
         counter++;
-        if(choice == counter){
-            cout << (*it) << endl;
-            Manager::Get()->SetValueListSelection(valueId, (*it));
+        if (response == to_string(counter)) {
+            cout << *it << endl;
+            Manager::Get()->SetValueListSelection(valueId, *it);
         }
     }
-    //Manager::Get()->SetValue(valueId, UnitName);
     return true;
 }
 
-//Allows to set the intensity of a volume parameter
-bool Five::setVolume(ValueID valueId, IntensityScale intensity){
-    Manager::Get()->SetValue(valueId, to_string(intensity));
-    return true;
+// Allows to set the intensity of a volume parameter.
+bool Five::setVolume(ValueID valueId, int intensity) {
+
+	if (intensity >= 0 && intensity < 100) {
+		Manager::Get()->SetValue(valueId, to_string(intensity));
+		return true;
+	}
+
+	return false;
 }
 
-//Allows to set the value of a duration parameter
-bool Five::setDuration(ValueID valueId) {
+// Allows to set the value of a duration parameter.
+bool Five::setDuration(ValueID valueId, int duration) {
+
+	if (duration >= 0) {
+		Manager::Get()->SetValue(valueId, duration);
+    	return true;
+	}
+
+	return false;    
+}
+
+// Allows to set the value of a int parameter.
+bool Five::setInt(ValueID valueId) {
     string response;
-    cout << "Please enter a duration in seconds:" << endl;
+    
+	cout << "Please enter a value in Int: " << endl;
     cin >> response;
-    Manager::Get()->SetValue(valueId, response);
-    return true;
+
+	if (UT_isDigit(response)) {
+		Manager::Get()->SetValue(valueId, response);
+    	return true;
+	}
+
+	cout << "Not a digit." << endl;
+	return false;
 }
 
-//Allows to set the value of a int parameter
-bool Five::setInt(ValueID valueId){
-    string response;
-    cout << "Please enter a value in Int:" << endl;
-    cin >> response;
-    Manager::Get()->SetValue(valueId, stoi(response));
-    return true;
-}
-
-//Allows to set the value of a boolean parameter
-bool Five::setBool(ValueID valueId)
-{
+// Allows to set the value of a boolean parameter.
+bool Five::setBool(ValueID valueId) {
     string answer;
-    bool state(0);
+
     cout << "true(1) or false(0) ?" << endl;
 	cin >> answer;
-	if(answer == "true" || answer == "True" || answer == "1"){
-        state = true;
-    }else if(answer == "false" || answer == "False" || answer == "0"){
-        state = false;
-    }
 
-    Manager::Get()->SetValue(valueId, state);
-    return true;
+	string trues[] = {"true", "True", "1"};
+	string falses[] = {"false", "False", "0"};
+
+	for (long unsigned int i = 0; i < sizeof(trues)/sizeof(trues[0]); i++) {		
+		if (answer == trues[i]) {
+			Manager::Get()->SetValue(valueId, true);
+			return true;
+		} else if (answer == falses[i]) {
+			Manager::Get()->SetValue(valueId, false);
+			return true;
+		}
+	}
+
+	cout << "Unsupported value." << endl;
+	return false;
 }
 
-//Allows to push or release a button parameter
+// Allows to push or release a button parameter.
 bool Five::setButton(ValueID valueId){
     string input;
     cout << "Press a key to push button" << endl;
@@ -232,53 +225,43 @@ bool Five::setButton(ValueID valueId){
 NodeInfo* Five::createNode(Notification const* notification) {
 	uint32 homeId = notification->GetHomeId();
 	uint8 nodeId = notification->GetNodeId();
-	ValueID valueID = notification->GetValueID();
-	string name = Manager::Get()->GetNodeProductName(homeId, nodeId);
-	string type = valueID.GetTypeAsString();
-
 
 	NodeInfo *n = new NodeInfo();
 	n->m_homeId		= homeId;
 	n->m_nodeId		= nodeId;
-	n->m_name     	= name;
-	n->m_nodeType 	= type;
+	n->m_name     	= Manager::Get()->GetNodeProductName(homeId, nodeId);
+	n->m_nodeType 	= notification->GetValueID().GetTypeAsString();
 
-    cout << "createnode" << endl;
     for (int i = 0; i < 29; i++) {
-		uint8 bite{ 0 };
+		uint8 bite = 0;
 		uint8 *bitmapPixel = &bite;
 		n->m_neighbors[i] = bitmapPixel;
 	}
-
-    //if (nodeId != 1)
-    //{
-   
-    //}
-
 
 	return n;
 }
 
 // Check if <nodeID> exists in <nodes>.
 bool Five::isNodeNew(uint8 nodeID, list<NodeInfo*> *nodes) {
-	list<NodeInfo*>::iterator it;
-	for (it = nodes->begin(); it != nodes->end(); it++) {
+	for (auto it = nodes->begin(); it != nodes->end(); it++) {
 		if ((*it)->m_nodeId == nodeID) {
 			return false;
 		}
 	}
+
 	return true;
 }
 
 //Returns the number of dead nodes in <nodes>
 int Five::deadNodeSum(list<NodeInfo*> *nodes) {
-	int counter{ 0 };
-	list<NodeInfo*>::iterator it;
-	for (it = nodes->begin(); it != nodes->end(); it++) {
+	int counter = 0;
+
+	for (auto it = nodes->begin(); it != nodes->end(); it++) {
 		if ((*it)->m_isDead && (*it)->m_nodeId != 1) {
 			counter++;
 		}
 	}
+
 	return counter;
 }
 
@@ -471,7 +454,7 @@ bool Five::nodeChoice(int* choice, list<NodeInfo*>::iterator it){
         return true;
 }
 //Prints the values of a node, and eventually asks for a choice (depending on bool value)
-bool Five::printValues(int* choice, list<NodeInfo*>::iterator* it, list<ValueID>::iterator it2, bool getOnly){
+bool Five::printValues(int* choice, list<NodeInfo*>::iterator* it, list<ValueID>::iterator it2, bool getOnly) {
     string container;
     list<string>::const_iterator sIt;
     string response;
@@ -511,13 +494,12 @@ bool Five::printValues(int* choice, list<NodeInfo*>::iterator* it, list<ValueID>
             }
             break;
         }
-
     }
     return true;
 }
 
 //Sets a value using specific setValue function depending on the value
-bool Five::newSetValue(int* choice, list<NodeInfo*>::iterator* it, list<ValueID>::iterator it2, bool isOk){
+bool Five::newSetValue(int* choice, list<NodeInfo*>::iterator* it, list<ValueID>::iterator it2, bool isOk) {
     list<string>::const_iterator sIt;
     string container;
     string response;
@@ -567,7 +549,9 @@ bool Five::newSetValue(int* choice, list<NodeInfo*>::iterator* it, list<ValueID>
                         return true;
                     }else if(valLabel.find("Color") != string::npos && (*it2).GetType() == ValueID::ValueType_String)
                     {
-                        setColor(*it2);
+						cout << "Set color: ";
+						cin >> response;
+                        setHexColor(*it2, response);
                         return true;
                     } else if(valLabel.find("Level") != string::npos && (*it2).GetType() == ValueID::ValueType_Byte)
                     {
@@ -603,8 +587,7 @@ bool Five::newSetValue(int* choice, list<NodeInfo*>::iterator* it, list<ValueID>
                         }
                         return true;
 
-                    }else if(valLabel.find("Volume") != string::npos)
-                    {
+                    } else if (valLabel.find("Volume") != string::npos) {
                         cout << "Choose a value between:" << endl << "1. Very High\n" << "2. High\n" << "3. Medium\n" << "4. Low\n" << "5. Very Low\n";
                         cin >> response;
                         listchoice = stoi(response);
@@ -629,7 +612,11 @@ bool Five::newSetValue(int* choice, list<NodeInfo*>::iterator* it, list<ValueID>
                         }
                         return true;
                     } else if (valLabel.find("Duration") != string::npos) {
-                        setDuration((*it2));
+                        cout << "Set duration: ";
+						cin >> response;
+						if (UT_isDigit(response)) {
+							setDuration(*it2, stoi(response));
+						}
                         return true;
                     } else if ((*it2).GetType() == ValueID::ValueType_Int) {
                         setInt(*it2);
@@ -648,7 +635,7 @@ bool Five::newSetValue(int* choice, list<NodeInfo*>::iterator* it, list<ValueID>
 }
 
 //Checks if an arg contains digits or not
-bool UT_isDigit(string arg) {
+bool Five::UT_isDigit(string arg) {
     int i;
 
     for (i=0; i<(int)arg.size(); i++) {
@@ -660,7 +647,7 @@ bool UT_isDigit(string arg) {
 }
 
 //Checks if the given id corresponds to an existing ValueID, and if yes places it in pointer
-bool UT_isValueIdExists(string id, ValueID* ptr_valueID) {
+bool Five::UT_isValueIdExists(string id, ValueID* ptr_valueID) {
     bool valueIdFound(false);
 
     for (auto it = nodes->begin(); it != nodes->end(); it++) {
@@ -683,7 +670,7 @@ bool UT_isValueIdExists(string id, ValueID* ptr_valueID) {
 }
 
 //Checks if the given id corresponds to an existing Node
-bool UT_isNodeIdExists(string id) {
+bool Five::UT_isNodeIdExists(string id) {
     bool nodeIdFound(false);
 
     for (auto it = nodes->begin(); it != nodes->end(); it++) {
@@ -695,7 +682,7 @@ bool UT_isNodeIdExists(string id) {
     return nodeIdFound;
 }
 
-//Builds the message to php client in a json format
+// Build the message to php client in a json format.
 string Five::buildPhpMsg(string commandName, vector<string> args) {
     Message msg = Message::InvalidCommand;
     StatusCode status = StatusCode::INVALID_badRequest;
@@ -990,23 +977,21 @@ string Five::receiveMsg(sockaddr_in address, int server_fd) {
     output += to_string(valread);
     output += "): \"";
     output += buffer;
-    output += "\" --> status: ";
 
     ptr = strtok(buffer, ",");
+	cout << ptr << endl;
 
     while (ptr != NULL) {
         if (counter++ == 0) {
-             for (unsigned long i = 0; i < sizeof(ptr); i++) {
-                 if(ptr[i] != '\0'){
-                     myFunc += ptr[i];
-                 }
-             }
-        } else {
-            args.push_back(ptr);
-        }
+			myFunc = ptr;
+		} else {
+			args.push_back(ptr);
+		}
 
         ptr = strtok(NULL, ",");
     }
+
+	output += ", func: " + myFunc;
 
     string msg = buildPhpMsg(myFunc, args);
 
@@ -1412,11 +1397,11 @@ void Five::onNotification(Notification const* notification, void* context) {
 	}
 
 	if (containsType(nType, Five::AliveNotification) || notification->GetNodeId() == 1) {
-		// if ((containsType(nType, Five::AliveNotification) || (nodes->size() == 1 && nType == Notification::Type_AllNodesQueried)) && g_menuLocked) {
-		// 	thread t1(menu);
-		// 	t1.detach();
-		// 	g_menuLocked = false;
-		// }
+		if ((containsType(nType, Five::AliveNotification) || (nodes->size() == 1 && nType == Notification::Type_AllNodesQueried)) && menuLocked) {
+			thread t1(menu);
+			t1.detach();
+			menuLocked = false;
+		}
 
 		if (containsNodeID(notification->GetNodeId(), (*Five::nodes))) {
 			NodeInfo* n = getNode(notification->GetNodeId(), Five::nodes);
@@ -1513,7 +1498,7 @@ void Five::watchState(uint32 homeID, int loopTimeOut) {
 	cout << "TimeOut\n";
 }
 
-void menu() {
+void Five::menu() {
     uint8 *bitmap[29];
 	bool menuRun(1);
 
