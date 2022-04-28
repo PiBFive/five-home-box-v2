@@ -4,8 +4,6 @@
 #include "Driver.h"
 #include <thread>
 #include <fstream>
-#include "ini/ini.h"
-
 #include "Five.h"
 
 using namespace OpenZWave;
@@ -18,8 +16,6 @@ bool g_checkLocked(1);
 int main(int argc, char const *argv[]) {
 	fstream my_file;
 	string response;
-
-	
 
 	Five::startedAt = getCurrentDatetime();
 	

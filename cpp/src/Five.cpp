@@ -18,11 +18,14 @@
 #include <fstream>
 #include <vector>
 
+#include "../../nlohmann/single_include/nlohmann/json.hpp"
+
 #define PORT 5101
 
 using namespace OpenZWave;
 using namespace Five;
 using namespace std;
+using namespace nlohmann;
 
 //Returns the node object whose ID you've given
 NodeInfo* Five::getNode(uint8 nodeID, list<NodeInfo*> *nodes) {
