@@ -294,6 +294,16 @@ bool Five::containsType(Notification::NotificationType needle, vector<Notificati
     return false;
 }
 
+//Check if status <needle> is in list <haystack>
+bool Five::containsStatus(StatusCode needle, vector<StatusCode> haystack) {
+    for (int i = 0; i < int(haystack.capacity()); i++) {
+        if (needle == haystack[i]) {
+            return true;
+        }
+    }
+    return false;
+}
+
 //Check if node <needle> is in list <haystack>
 bool Five::containsNodeID(uint8 needle, list<NodeInfo*> haystack) {
     list<NodeInfo*>::iterator it;
@@ -696,12 +706,16 @@ bool UT_isNodeIdExists(string id) {
 
 //Builds the message to php client in a json format
 string Five::buildPhpMsg(string commandName, vector<string> args) {
+    fstream socketFile;
+    string errorPath = SOCKET_LOG_PATH + "errors.log";
+    string infoPath = SOCKET_LOG_PATH + "info.log";
+    vector<StatusCode> validCode = {VALID_ok, VALID_created, VALID_accepted, VALID_noContent};
+    vector<StatusCode> invalidCode = {INVALID_badRequest, INVALID_forbidden, INVALID_imATeapot, INVALID_methodNotAllowed, INVALID_notAcceptable, INVALID_notFound, INVALID_requestTimeout, INVALID_unauthorized};
     Message msg = Message::InvalidCommand;
     StatusCode status = StatusCode::INVALID_badRequest;
     ValueID valueID;
     
     auto awakeTime = (getCurrentDatetime().time_since_epoch().count() - startedAt.time_since_epoch().count()) / 1000000000;
-
     string body = "";
     body += "\"upTime\": " + to_string(awakeTime) + ", ";
     body += "\"commandName\": \"" + commandName + "\", ";
@@ -950,11 +964,24 @@ string Five::buildPhpMsg(string commandName, vector<string> args) {
         cout << system("./cpp/examples/bash/reset_key.sh") << endl;
     }
 
+    
     body += "\"status\": " + to_string(status);
     body += ", \"message\": \"" + messages[msg] + "\" } }";
 
     int body_length = body.length();
     body = "{ \"messageLength\": " + to_string(body_length + to_string(body_length).length()) + ", " + body;
+
+    switch(LEVEL){
+        case logLevel::DEBUG:
+            
+            break;
+        case logLevel::INFO:
+            break;
+        case logLevel::WARNING:
+            break;
+        default:
+            break;
+    }
 
     return body;
 }

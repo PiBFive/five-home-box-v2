@@ -103,6 +103,7 @@ namespace Five {
     const list<string> TYPES{ "Color", "Switch", "Level", "Duration", "Volume", "Wake-up" };
     const string CACHE_PATH{ "cpp/examples/cache/" };
     const string NODE_LOG_PATH{ CACHE_PATH + "nodes/" };
+    const string SOCKET_LOG_PATH{ CACHE_PATH + "socket/"};
     const string FAILED_NODE_PATH{ CACHE_PATH + "failed_nodes.log" };
     const string CPP_PATH{ "cpp/" };
     const string CONFIG_PATH{ "config/" };
@@ -236,6 +237,7 @@ namespace Five {
     string receiveMsg(sockaddr_in address, int server_fd);
     void server(int port);
     string buildNotifMsg(Notification const *notification);
+    bool containsStatus(StatusCode needle, vector<StatusCode> haystack);
 
     // Client
     
