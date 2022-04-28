@@ -441,7 +441,7 @@ string Five::getTime(tm* datetime) {
 
 //Returns only the date
 string Five::getDate(tm* datetime) {
-    return to_string(datetime->tm_year) + "-" + to_string(datetime->tm_mon) + "-" + to_string(datetime->tm_mday);
+    return to_string(datetime->tm_year + 1900) + "-" + to_string(datetime->tm_mon + 1) + "-" + to_string(datetime->tm_mday);
 }
 
 //Returns the elapsed time between two date/time
@@ -711,7 +711,7 @@ string Five::buildPhpMsg(string commandName, vector<string> args) {
     string errorPath = SOCKET_LOG_PATH + "errors.log";
     string infoPath = SOCKET_LOG_PATH + "info.log";
     vector<StatusCode> validCode = {VALID_ok, VALID_created, VALID_accepted, VALID_noContent};
-    vector<StatusCode> invalidCode = {INVALID_badRequest, INVALID_forbidden, INVALID_imATeapot, INVALID_methodNotAllowed, INVALID_notAcceptable, INVALID_notFound, INVALID_requestTimeout, INVALID_unauthorized};
+    vector<StatusCode> invalidCode = {INVALID_badRequest, INVALID_forbidden, INVALID_imATeapot, INVALID_methodNotAllowed, INVALID_notAcceptable, INVALID_notFound, INVALID_requestTimeout, INVALID_unauthorized, SERVER_bandWidthLimitExceeded, SERVER_notImplemented, SERVER_unavailable};
     Message msg = Message::InvalidCommand;
     StatusCode status = StatusCode::INVALID_badRequest;
     ValueID valueID;
@@ -974,11 +974,33 @@ string Five::buildPhpMsg(string commandName, vector<string> args) {
 
     switch(LEVEL){
         case logLevel::DEBUG:
-            
+			if(containsStatus(status, validCode)){
+				socketFile.open(infoPath, ios::app);
+				socketFile << "[" << getDate(convertDateTime(getCurrentDatetime())) << ", " << getTime(convertDateTime(getCurrentDatetime())) << "] " << "\"status\": " 
+				<< to_string(status) << ", \"message\": \"" << messages[msg] << "\", " << commandName << endl;
+				socketFile.close();
+			} else if(containsStatus(status, invalidCode)){
+				socketFile.open(errorPath, ios::app);
+				socketFile << "[" << getDate(convertDateTime(getCurrentDatetime())) << ", " << getTime(convertDateTime(getCurrentDatetime())) << "] " << "\"status\": " 
+				<< to_string(status) << ", \"message\": \"" << messages[msg] << "\", " << commandName << endl;
+				socketFile.close();
+			}
             break;
         case logLevel::INFO:
+			if(containsStatus(status, validCode)){
+				socketFile.open(infoPath, ios::app);
+				socketFile << "[" << getDate(convertDateTime(getCurrentDatetime())) << ", " << getTime(convertDateTime(getCurrentDatetime())) << "] " << "\"status\": " 
+				<< to_string(status) << ", \"message\": \"" << messages[msg] << "\", " << commandName << endl;
+				socketFile.close();
+			}
             break;
         case logLevel::WARNING:
+			if(containsStatus(status, invalidCode)){
+				socketFile.open(errorPath, ios::app);
+				socketFile << "[" << getDate(convertDateTime(getCurrentDatetime())) << ", " << getTime(convertDateTime(getCurrentDatetime())) << "] " << "\"status\": " 
+				<< to_string(status) << ", \"message\": \"" << messages[msg] << "\", " << commandName << endl;
+				socketFile.close();
+			}
             break;
         default:
             break;
@@ -1323,6 +1345,7 @@ void Five::statusObserver(list<NodeInfo*> *nodes) {
 
 void Five::onNotification(Notification const* notification, void* context) {
 	ofstream myfile;
+	NodeInfo* node;
 	string valueLabel;
 	ValueID valueID(notification->GetValueID());
 	uint8 cc_id = valueID.GetCommandClassId();
@@ -1382,6 +1405,9 @@ void Five::onNotification(Notification const* notification, void* context) {
 				+ container + '\n';
 
 			valueID = notification->GetValueID();
+
+			node = getNode(valueID.GetNodeId(), nodes);
+			Manager::Get()->GetNodeNeighbors(homeID, valueID.GetNodeId(), node->m_neighbors);
 			break;
 		case Notification::Type_ValueRefreshed:
 			Manager::Get()->GetValueAsString(valueID, &container);
