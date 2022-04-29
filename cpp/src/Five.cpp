@@ -857,13 +857,13 @@ string Five::buildPhpMsg(string commandName, vector<string> args) {
         if ((int)args.size() != 2) {
             status = StatusCode::INVALID_badRequest;
             msg = Message::ArgumentError;
-        }else for(int i = 0; i < 2; i++) {
-            if (!UT_isDigit(args[i])){
-                status = StatusCode::INVALID_badRequest;
-                msg = Message::ValueTypeError;
-            }
-        } 
-        if (!UT_isNodeIdExists(args[0])) {
+        }else if(!UT_isDigit(args[0])) {
+			status = StatusCode::INVALID_badRequest;
+			msg = Message::ValueTypeError;
+        } else if(!UT_isDigit(args[1])) {
+			status = StatusCode::INVALID_badRequest;
+			msg = Message::ValueTypeError;
+        } else if (!UT_isNodeIdExists(args[0])) {
             status = StatusCode::INVALID_badRequest;
             msg = Message::NodeNotFoundError;
         } else {
@@ -923,7 +923,10 @@ string Five::buildPhpMsg(string commandName, vector<string> args) {
             status = StatusCode::INVALID_badRequest;
             msg = Message::ArgumentError;
         } else {
+			status = StatusCode::VALID_noContent;
+            msg = Message::None;
             for(auto it = nodes->begin(); it != nodes->end(); ++it){
+				pinged = false;
                 for(auto it2 = (*it)->m_values.begin(); it2 != (*it)->m_values.end(); it2++){
                     if (Manager::Get()->GetValueLabel(*it2) == "Library Version") {
                         int counter{ 60 };
@@ -938,11 +941,11 @@ string Five::buildPhpMsg(string commandName, vector<string> args) {
                             }
                         }
                     }
-                    if(pinged){
-                        countTrue += 1;
-                    } else{
-                        countFalse += 1;
-                    }
+                }
+				if(pinged){
+					countTrue += 1;
+				} else{
+					countFalse += 1;
                 }
             }
             body += "\"successful nodes\": " + to_string(countTrue) + " \"failed nodes\": " + to_string(countFalse) + ", ";
@@ -1475,11 +1478,11 @@ void Five::onNotification(Notification const* notification, void* context) {
 	}
 
 	if (containsType(nType, Five::AliveNotification) || notification->GetNodeId() == 1) {
-		if ((containsType(nType, Five::AliveNotification) || (nodes->size() == 1 && nType == Notification::Type_AllNodesQueried)) && menuLocked) {
-			thread t1(menu);
-			t1.detach();
-			menuLocked = false;
-		}
+		// if ((containsType(nType, Five::AliveNotification) || (nodes->size() == 1 && nType == Notification::Type_AllNodesQueried)) && menuLocked) {
+		// 	thread t1(menu);
+		// 	t1.detach();
+		// 	menuLocked = false;
+		// }
 
 		if (containsNodeID(notification->GetNodeId(), (*Five::nodes))) {
 			NodeInfo* n = getNode(notification->GetNodeId(), Five::nodes);
