@@ -182,7 +182,7 @@ namespace Five {
     bool setDuration(ValueID valueID, int duration);
     bool setInt(ValueID valueId);
     bool setBool(ValueID valueId);
-    bool setButton(ValueID valueId);
+    bool setButton(ValueID valueId, string input);
 
     // Node methods
     
@@ -254,6 +254,7 @@ namespace Five {
     bool UT_isNodeIdExists(string id);
     bool UT_isDecimal(string arg);
     bool UT_isBoolean(string arg);
+    bool UT_isButton(string arg);
 
     auto startedAt = getCurrentDatetime();
 }

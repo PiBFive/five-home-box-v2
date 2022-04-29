@@ -208,14 +208,12 @@ bool Five::setBool(ValueID valueId) {
 }
 
 // Allows to push or release a button parameter.
-bool Five::setButton(ValueID valueId){
-    string input;
-    cout << "Press a key to push button" << endl;
-    cin >> input;
-    Manager::Get()->PressButton(valueId);
-    cout << "Press a key to release button" << endl;
-    cin >> input;
-    Manager::Get()->ReleaseButton(valueId);
+bool Five::setButton(ValueID valueId, string input){
+	if(input == "on" || input == "On" || input == "ON" || input == "1"){
+	    Manager::Get()->PressButton(valueId);
+	} else{
+	    Manager::Get()->ReleaseButton(valueId);
+	}
     return true;
 }
 
@@ -523,7 +521,7 @@ bool Five::newSetValue(int* choice, list<NodeInfo*>::iterator* it, list<ValueID>
         {
             counterValue++;
             if (*choice == counterValue) {
-                setButton((*it2));
+                //setButton((*it2));
                 return true;
             }
 
@@ -675,6 +673,15 @@ bool Five::UT_isBoolean(string arg) {
     return false;
 }
 
+bool Five::UT_isButton(string arg) {
+	list<string> list = {"On", "Off", "on", "off", "ON", "OFF", "0", "1"};
+    for (auto it = list.begin(); it != list.end(); it++) {
+        if (arg == (*it)) {
+            return true;
+        }
+    }
+    return false;
+}
 //Checks if the given id corresponds to an existing ValueID, and if yes places it in pointer
 bool Five::UT_isValueIdExists(string id, ValueID* ptr_valueID) {
     bool valueIdFound(false);
@@ -789,12 +796,42 @@ string Five::buildPhpMsg(string commandName, vector<string> args) {
 						setSwitch(valueID, args[1]);
 					}
 					break;
+				case ValueID::ValueType_Button:
+					if(!UT_isButton(args[1])){
+						status = StatusCode::INVALID_badRequest;
+						msg = Message::ArgumentWrongType;
+					} else {
+						msg = Message::None;
+						status = StatusCode::VALID_accepted;
+						setButton(valueID, args[1]);
+					}
+					break;
+				case ValueID::ValueType_Short:
+					if(!UT_isInt(args[1])){
+						status = StatusCode::INVALID_badRequest;
+						msg = Message::ArgumentWrongType;
+					} else{
+						status = StatusCode::VALID_accepted;
+						msg = Message::None;
+						Manager::Get()->SetValue(valueID, args[1]);
+					}
+					break;
+				case ValueID::ValueType_Byte:
+					if(!UT_isInt(args[1])){
+						status = StatusCode::INVALID_badRequest;
+						msg = Message::ArgumentWrongType;
+					} else{
+						status = StatusCode::VALID_accepted;
+						msg = Message::None;
+						Manager::Get()->SetValue(valueID, args[1]);
+					}
+					break;
 				default:
+					status = StatusCode::VALID_accepted;
+					msg = Message::None;
+					Manager::Get()->SetValue(valueID, args[1]);
 					break;
 			}
-            status = StatusCode::VALID_accepted;
-            msg = Message::None;
-            Manager::Get()->SetValue(valueID, args[1]);
         }
     } else if (commandName == COMMANDS[1].name) { // include
         status = StatusCode::VALID_created;
