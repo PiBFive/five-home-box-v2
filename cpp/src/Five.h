@@ -75,7 +75,8 @@ namespace Five {
         NodeNotFoundError, 
         InvalidArgument,
         None,
-        InvalidCommand
+        InvalidCommand,
+        ArgumentWrongType
     };
 
     const string messages[] = {
@@ -85,7 +86,8 @@ namespace Five {
         "NodeNotFoundError",
         "InvalidArgument",
         "",
-        "InvalidCommand"
+        "InvalidCommand",
+        "ArgumentWrongType"
     };
 
     struct Command {
@@ -172,7 +174,7 @@ namespace Five {
 
     // Config method
     
-    bool setSwitch(ValueID valueID, bool state);
+    bool setSwitch(ValueID valueID, string answer);
     bool setIntensity(ValueID valueID, int intensity);
     bool setHexColor(ValueID valueID, string hexColor);
     bool setList(ValueID valueID);
@@ -247,9 +249,11 @@ namespace Five {
 
     // Unit Tests
 
-    bool UT_isDigit(string arg);
+    bool UT_isInt(string arg);
     bool UT_isValueIdExists(string id, ValueID* ptr_valueID);
     bool UT_isNodeIdExists(string id);
+    bool UT_isDecimal(string arg);
+    bool UT_isBoolean(string arg);
 
     auto startedAt = getCurrentDatetime();
 }
