@@ -756,15 +756,13 @@ string Five::buildPhpMsg(string commandName, vector<string> args) {
         } else if (!UT_isValueIdExists(args[0], &valueID)) {
             status = StatusCode::INVALID_notFound;
             msg = Message::ValueNotFoundError;
-        } else if((int)args.size() > 2){
-			status = StatusCode::VALID_accepted;
-            msg = Message::None;
-			for(int i = 2; i < (int)args.size(); i++ ){
-				args[1] += " " + args[i];
-			}
-			Manager::Get()->SetValue(valueID, args[1]);
-		} else{
+        } else if((int)args.size() > 2 && valueID.GetType() != ValueID::ValueType_List){
+			status = StatusCode::INVALID_badRequest;
+            msg = Message::ArgumentError;
+		} else {
 			type = valueID.GetType();
+			vector<string> listItems;
+			bool verifList = false;
 			switch(type){
 				case ValueID::ValueType_Int:
 					if(!UT_isInt(args[1])){
@@ -821,6 +819,29 @@ string Five::buildPhpMsg(string commandName, vector<string> args) {
 						status = StatusCode::INVALID_badRequest;
 						msg = Message::ArgumentWrongType;
 					} else{
+						status = StatusCode::VALID_accepted;
+						msg = Message::None;
+						Manager::Get()->SetValue(valueID, args[1]);
+					}
+					break;
+				case ValueID::ValueType_List:
+					Manager::Get()->GetValueListItems(valueID, &listItems);
+					if((int)args.size() > 2 && valueID.GetType() == ValueID::ValueType_List){
+						for(int i = 2; i < (int)args.size(); i++ ){
+							args[1] += " " + args[i];
+						}
+					}
+
+					for(auto it = listItems.begin(); it != listItems.end(); it++){
+						if(args[1] == *it){
+							verifList = true;
+						}
+					}
+
+					if(!verifList){
+						status = StatusCode::INVALID_badRequest;
+            			msg = Message::ArgumentError;
+					}else {
 						status = StatusCode::VALID_accepted;
 						msg = Message::None;
 						Manager::Get()->SetValue(valueID, args[1]);
