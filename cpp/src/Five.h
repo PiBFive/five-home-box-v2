@@ -13,6 +13,7 @@ namespace Five {
     pthread_cond_t initCond = PTHREAD_COND_INITIALIZER;
     pthread_mutex_t initMutex;
 
+
     const int ZWAVE_PORT = 5101;
     const int PHP_PORT = 5100;
     const char *LOCAL_ADDRESS = "127.0.0.1";
@@ -144,10 +145,12 @@ namespace Five {
     };
 
     const string STATES[]{
-        "Normal", "Starting", "Cancel", "Error",
+        "Normal", "Starting", "Cancel", "Normal",
         "Waiting", "Sleeping", "InProgress", "Completed",
         "Failed", "NodeOK", "NodeFailed"
     };
+
+    const vector<Driver::ControllerState> ADD_RM_STATES = {Driver::ControllerState_Starting, Driver::ControllerState_Waiting, Driver::ControllerState_InProgress};
 
     const string NOTIFICATIONS[] {
         "VALUED_ADDED", "VALUE_REMOVED", "VALUE_CHANGED", "VALUE_REFRESHED", "GROUP",
@@ -225,6 +228,7 @@ namespace Five {
     // Driver methods
     
     string getDriverData(uint32 homeID);
+    bool containsControllerType(Driver::ControllerState needle, vector<Driver::ControllerState> haystack);
 
     // Time methods
     

@@ -286,6 +286,16 @@ bool Five::containsStatus(StatusCode needle, vector<StatusCode> haystack) {
     return false;
 }
 
+//Check if type <needle> is in list <haystack>
+bool Five::containsControllerType(Driver::ControllerState needle, vector<Driver::ControllerState> haystack) {
+    for (int i = 0; i < int(haystack.capacity()); i++) {
+        if (needle == haystack[i]) {
+            return true;
+        }
+    }
+    return false;
+}
+
 //Check if node <needle> is in list <haystack>
 bool Five::containsNodeID(uint8 needle, list<NodeInfo*> haystack) {
     list<NodeInfo*>::iterator it;
@@ -728,6 +738,8 @@ string Five::buildPhpMsg(string commandName, vector<string> args) {
     Message msg = Message::InvalidCommand;
     StatusCode status = StatusCode::INVALID_badRequest;
     ValueID valueID;
+	static bool nodeInEx = false;
+	string stateNode;
     
     auto awakeTime = (getCurrentDatetime().time_since_epoch().count() - startedAt.time_since_epoch().count()) / 1000000000;
     string body = "";
@@ -854,11 +866,13 @@ string Five::buildPhpMsg(string commandName, vector<string> args) {
 					break;
 			}
         }
-    } else if (commandName == COMMANDS[1].name) { // include
+    } else if (commandName == COMMANDS[1].name) { // include 
+		nodeInEx = true;
         status = StatusCode::VALID_created;
         msg = Message::None;
         Manager::Get()->AddNode(Five::homeID, false);
     } else if (commandName == COMMANDS[2].name) { // exclude
+		nodeInEx = false;
         status = StatusCode::VALID_accepted;
         msg = Message::None;
         Manager::Get()->RemoveNode(Five::homeID);
@@ -1077,7 +1091,18 @@ string Five::buildPhpMsg(string commandName, vector<string> args) {
 
     
     body += "\"status\": " + to_string(status);
-    body += ", \"message\": \"" + messages[msg] + "\" } }";
+	if(containsControllerType(driverState, ADD_RM_STATES)){
+		if(nodeInEx){
+    		body += ", \"message\": \"" + messages[msg] + "\", \"state\": \"In_" + STATES[driverState] + "\" } }";
+
+		}else {
+    		body += ", \"message\": \"" + messages[msg] + "\", \"state\": \"Ex_" + STATES[driverState] + "\" } }";
+
+		}
+	} else{
+    	body += ", \"message\": \"" + messages[msg] + "\", \"state\": \"" + STATES[driverState] + "\" } }";
+
+	}
 
     int body_length = body.length();
     body = "{ \"messageLength\": " + to_string(body_length + to_string(body_length).length()) + ", " + body;
