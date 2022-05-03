@@ -1087,20 +1087,45 @@ string Five::buildPhpMsg(string commandName, vector<string> args) {
         msg = Message::None;
         Manager::Get()->RemoveDriver(DRIVER_PATH);
         cout << system("./cpp/examples/bash/reset_key.sh") << endl;
-    }
+    } else if (commandName == COMMANDS[13].name) { // Map
+		string array[nodes->size()][nodes->size()];
+		status = StatusCode::VALID_ok;
+        msg = Message::None;
+		int i(0);
+		body += "\"map\": [\n ";
+		for(auto it = nodes->begin(); it != nodes->end(); it++){
+			if(it != nodes->begin()){
+				body += "],\n ";
+			}
+				body += "[";
+			for(int j = 0; j < (int)nodes->size(); j++){
+				if(UT_isNodeIdExists(to_string(*((*it)->m_neighbors[j])))){
+					array[i][*((*it)->m_neighbors[j])] = "1";
+				} else{
+					array[i][*((*it)->m_neighbors[j])] = "0";
+				}
+				if(j != 0){
+					body += ",";
+				}
+				body += array[i][*((*it)->m_neighbors[j])];
+			}
+			//body += "]\n";
+			i++;
+		}
+		body += "]\n], ";
+	}
 
-    
     body += "\"status\": " + to_string(status);
 	if(containsControllerType(driverState, ADD_RM_STATES)){
 		if(nodeInEx){
-    		body += ", \"message\": \"" + messages[msg] + "\", \"state\": \"In_" + STATES[driverState] + "\" } }";
+    		body += ", \"message\": \"" + messages[msg] + "\", \"driverState\": \"In_" + STATES[driverState] + "\" } }";
 
 		}else {
-    		body += ", \"message\": \"" + messages[msg] + "\", \"state\": \"Ex_" + STATES[driverState] + "\" } }";
+    		body += ", \"message\": \"" + messages[msg] + "\", \"driverState\": \"Ex_" + STATES[driverState] + "\" } }";
 
 		}
 	} else{
-    	body += ", \"message\": \"" + messages[msg] + "\", \"state\": \"" + STATES[driverState] + "\" } }";
+    	body += ", \"message\": \"" + messages[msg] + "\", \"driverState\": \"" + STATES[driverState] + "\" } }";
 
 	}
 
@@ -1464,6 +1489,7 @@ void Five::statusObserver(list<NodeInfo*> *nodes) {
 						// }
 					}else {
 						(*it)->m_isDead = false;
+						Manager::Get()->GetNodeNeighbors(homeID, (*it)->m_nodeId, (*it)->m_neighbors);
 
 						// file.open(FAILED_NODE_PATH, ios::in);
 						// fstream temp;
@@ -1584,8 +1610,10 @@ void Five::onNotification(Notification const* notification, void* context) {
 		case Notification::Type_NodeQueriesComplete:
 			log += "[NODE_QUERIES_COMPLETE]           node " + to_string(valueID.GetNodeId()) + '\n';
 
-			node = getNode(valueID.GetNodeId(), nodes);
-			Manager::Get()->GetNodeNeighbors(homeID, valueID.GetNodeId(), node->m_neighbors);
+			if(valueID.GetNodeId() != 1){
+				node = getNode(valueID.GetNodeId(), nodes);
+				Manager::Get()->GetNodeNeighbors(homeID, valueID.GetNodeId(), node->m_neighbors);
+			}
 			break;
 		case Notification::Type_AllNodesQueriedSomeDead:
 			log += "\n🚨 [ALL_NODES_QUERIED_SOME_DEAD]  node " + to_string(valueID.GetNodeId()) + '\n'
