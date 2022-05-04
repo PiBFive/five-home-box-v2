@@ -866,16 +866,26 @@ string Five::buildPhpMsg(string commandName, vector<string> args) {
 					break;
 			}
         }
-    } else if (commandName == COMMANDS[1].name) { // include 
-		nodeInEx = true;
-        status = StatusCode::VALID_created;
-        msg = Message::None;
-        Manager::Get()->AddNode(Five::homeID, false);
+    } else if (commandName == COMMANDS[1].name) { // include
+		if((int)args.size() != 0){
+			status = StatusCode::INVALID_badRequest;
+            msg = Message::ArgumentError;
+		}else{
+			nodeInEx = true;
+			status = StatusCode::VALID_created;
+			msg = Message::None;
+			Manager::Get()->AddNode(Five::homeID, false);
+		}
     } else if (commandName == COMMANDS[2].name) { // exclude
-		nodeInEx = false;
-        status = StatusCode::VALID_accepted;
-        msg = Message::None;
-        Manager::Get()->RemoveNode(Five::homeID);
+		if((int)args.size() != 0){
+			status = StatusCode::INVALID_badRequest;
+            msg = Message::ArgumentError;
+		}else{
+			nodeInEx = false;
+			status = StatusCode::VALID_accepted;
+			msg = Message::None;
+			Manager::Get()->RemoveNode(Five::homeID);
+		}
     } else if (commandName == COMMANDS[3].name) { // getNode
         if ((int)args.size() == 0) {
             status = StatusCode::VALID_ok;
@@ -1019,36 +1029,41 @@ string Five::buildPhpMsg(string commandName, vector<string> args) {
         }
         body = "\"Ping sent\": " + args[1] + ", \"received\": " + to_string(countTrue) + ", \"failed\": " + to_string(countFalse) + ", ";
     } else if (commandName == COMMANDS[8].name) { // help
-        status = StatusCode::VALID_ok;
-        msg = Message::None;
-        int cmdCounter = sizeof(COMMANDS)/sizeof(COMMANDS[0]);
+		if((int)args.size() != 0){
+			status = StatusCode::INVALID_badRequest;
+            msg = Message::ArgumentError;
+		}else{
+			status = StatusCode::VALID_ok;
+			msg = Message::None;
+			int cmdCounter = sizeof(COMMANDS)/sizeof(COMMANDS[0]);
 
-        body += "\"commands\": [ ";
-        for (int i = 0; i < cmdCounter; i++) {
-            if (i != 0) {
-                body += ", ";
-            }
-            body += "{ \"name\": \"" + COMMANDS[i].name + "\", ";
-            body += "\"args\": [ ";
-            for (auto it = COMMANDS[i].arguments.begin(); it != COMMANDS[i].arguments.end(); it++) {
-                if (it != COMMANDS[i].arguments.begin()) {
-                    body += ", ";
-                }
-                body += '\"' + *it + '\"';
-            }
-            body += " ], \"description\": \"" + COMMANDS[i].description + "\" }";
-        }
-        body += " ], ";
+			body += "\"commands\": [ ";
+			for (int i = 0; i < cmdCounter; i++) {
+				if (i != 0) {
+					body += ", ";
+				}
+				body += "{ \"name\": \"" + COMMANDS[i].name + "\", ";
+				body += "\"args\": [ ";
+				for (auto it = COMMANDS[i].arguments.begin(); it != COMMANDS[i].arguments.end(); it++) {
+					if (it != COMMANDS[i].arguments.begin()) {
+						body += ", ";
+					}
+					body += '\"' + *it + '\"';
+				}
+				body += " ], \"description\": \"" + COMMANDS[i].description + "\" }";
+			}
+			body += " ], ";
+		}
     } else if (commandName == COMMANDS[9].name) { //broadcast
-        string message;
-        int countTrue = 0;
-        int countFalse = 0;
-        bool pinged(false);
 
         if((int)args.size() != 0){
             status = StatusCode::INVALID_badRequest;
             msg = Message::ArgumentError;
         } else {
+			string message;
+			int countTrue = 0;
+			int countFalse = 0;
+			bool pinged(false);
 			status = StatusCode::VALID_noContent;
             msg = Message::None;
             for(auto it = nodes->begin(); it != nodes->end(); ++it){
@@ -1078,41 +1093,56 @@ string Five::buildPhpMsg(string commandName, vector<string> args) {
 
         }
     } else if (commandName == COMMANDS[10].name) { // Restart.
-        status = StatusCode::VALID_ok;
-        msg = Message::None;
-        Manager::Get()->RemoveDriver(DRIVER_PATH);
-        cout << system("sudo systemctl restart minozw.service") << endl;
-    } else if (commandName == COMMANDS[11].name) { // Reset.
-        status = StatusCode::VALID_ok;
-        msg = Message::None;
-        Manager::Get()->RemoveDriver(DRIVER_PATH);
-        cout << system("./cpp/examples/bash/reset_key.sh") << endl;
-    } else if (commandName == COMMANDS[13].name) { // Map
-		string array[nodes->size()][nodes->size()];
-		status = StatusCode::VALID_ok;
-        msg = Message::None;
-		int i(0);
-		body += "\"map\": [\n ";
-		for(auto it = nodes->begin(); it != nodes->end(); it++){
-			if(it != nodes->begin()){
-				body += "],\n ";
-			}
-				body += "[";
-			for(int j = 0; j < (int)nodes->size(); j++){
-				if(UT_isNodeIdExists(to_string(*((*it)->m_neighbors[j])))){
-					array[i][*((*it)->m_neighbors[j])] = "1";
-				} else{
-					array[i][*((*it)->m_neighbors[j])] = "0";
-				}
-				if(j != 0){
-					body += ",";
-				}
-				body += array[i][*((*it)->m_neighbors[j])];
-			}
-			//body += "]\n";
-			i++;
+		if((int)args.size() != 0){
+			status = StatusCode::INVALID_badRequest;
+            msg = Message::ArgumentError;
+		}else{
+			status = StatusCode::VALID_ok;
+			msg = Message::None;
+			Manager::Get()->RemoveDriver(DRIVER_PATH);
+			cout << system("sudo systemctl restart minozw.service") << endl;
 		}
-		body += "]\n], ";
+    } else if (commandName == COMMANDS[11].name) { // Reset.
+		if((int)args.size() != 0){
+			status = StatusCode::INVALID_badRequest;
+            msg = Message::ArgumentError;
+		}else{
+			status = StatusCode::VALID_ok;
+			msg = Message::None;
+			Manager::Get()->RemoveDriver(DRIVER_PATH);
+			cout << system("./cpp/examples/bash/reset_key.sh") << endl;
+		}
+    } else if (commandName == COMMANDS[13].name) { // Map
+		if ((int)args.size() != 1) {
+            status = StatusCode::INVALID_badRequest;
+            msg = Message::ArgumentError;
+		} else{
+			string array[nodes->size()][nodes->size()];
+			int i(0);
+			status = StatusCode::VALID_ok;
+			msg = Message::None;
+			body += "\"map\": [\n ";
+			for(auto it = nodes->begin(); it != nodes->end(); it++){
+				if(it != nodes->begin()){
+					body += "],\n ";
+				}
+					body += "[";
+				for(int j = 0; j < (int)nodes->size(); j++){
+					if(UT_isNodeIdExists(to_string(*((*it)->m_neighbors[j])))){
+						array[i][*((*it)->m_neighbors[j])] = "1";
+					} else{
+						array[i][*((*it)->m_neighbors[j])] = "0";
+					}
+					if(j != 0){
+						body += ",";
+					}
+					body += array[i][*((*it)->m_neighbors[j])];
+				}
+				//body += "]\n";
+				i++;
+			}
+			body += "]\n], ";
+		}
 	}
 
     body += "\"status\": " + to_string(status);
