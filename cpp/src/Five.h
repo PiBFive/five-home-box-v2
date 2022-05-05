@@ -135,6 +135,7 @@ namespace Five {
         Command{"_reset", {}, "Remove log files, reset the ZWave driver and restart the process with Bash."},
         Command{"_setLvl", {"level"}, "[NONE, WARNING, INFO, DEBUG] Restart the ZWave driver with the selected level with Bash."},
         Command{"map", {}, "Returns the Neighbors Map as response"},
+        Command{"asso", {"nodeId", "groupIdx", "targetNodeId"}, "Associate a node to a group"},
 
     };
     

@@ -1143,6 +1143,16 @@ string Five::buildPhpMsg(string commandName, vector<string> args) {
 			}
 			body += "]\n], ";
 		}
+	} else if (commandName == COMMANDS[14].name){ //asso
+		status = StatusCode::VALID_ok;
+		msg = Message::None;
+		uint8 nodeId = stoi(args[0]);
+		uint8 groupIdx = stoi(args[1]);
+		uint8 targetNodeId = stoi(args[2]);
+
+		Manager::Get()->AddAssociation(homeID, nodeId, groupIdx, targetNodeId);
+
+		
 	}
 
     body += "\"status\": " + to_string(status);
@@ -1355,9 +1365,20 @@ string convertToString(char* a, int size)
 
 //Converts the information of a node into json format suitable to send
 string Five::nodeToJson(NodeInfo* node) {
+	uint8* associations;
+	uint8 nbGroup = Manager::Get()->GetNumGroups(homeID, node->m_nodeId);
+	uint8 nbNodes = Manager::Get()->GetAssociations(homeID, node->m_nodeId, 2, &associations);
     string msg = "";
     msg += "{ \"nodeId\": " + to_string(node->m_nodeId);
     msg += ", \"productName\": \"" + node->m_name;
+    msg += ", \"groupNb\": " + to_string(nbGroup);
+    msg += ", \"assoNodes\": \"";
+	for(int i = 0; i < (int)nbNodes; i++){
+		if(i != 0){
+			msg += ", ";
+		}
+		msg += to_string(associations[i]);
+	}
     msg += "\", \"nodeDead\": " + to_string(node->m_isDead);
     msg += ", \"lastUpdate\": \"";
 
